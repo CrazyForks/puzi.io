@@ -1,7 +1,7 @@
 # puzi.io
 
 🏪 Everyone should have a little shop(puzi)  
-🏮 每个人都该开个铺子(puzi)
+🏮 每个人都该开个铺子(puzi)  
 🛍 Todo el mundo debería tener su tiendita(puzi)  
 🏬 Chacun devrait avoir sa petite boutique(puzi)  
 🏠 Jeder sollte ein kleines Lädchen haben(puzi)  
