@@ -1,2 +1,13 @@
-# puzi.io
-Everyone need a puzi
+# puzi(puzi)io
+
+🏪 Everyone should have a little shop(puzi)  
+🏮 每个人都该开个铺子(puzi)
+🛍 Todo el mundo debería tener su tiendita(puzi)  
+🏬 Chacun devrait avoir sa petite boutique(puzi)  
+🏠 Jeder sollte ein kleines Lädchen haben(puzi)  
+🏡 Todo mundo devia ter sua lojinha(puzi)  
+🏘 У каждого должна быть своя маленькая лавка(puzi)  
+🏯 みんな自分の小さなお店を持つべきだよ(puzi)  
+🏪 누구나 자기만의 작은 가게가 있어야 해(puzi)  
+🏬 كل شخص لازم يكون عنده متجر صغير له(puzi)  
+🏠 हर किसी के पास अपनी छोटी दुकान होनी चाहिए(puzi)  
