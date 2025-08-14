@@ -1,4 +1,4 @@
-# puzi(puzi)io
+# puzi.io
 
 🏪 Everyone should have a little shop(puzi)  
 🏮 每个人都该开个铺子(puzi)
