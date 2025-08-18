@@ -5,8 +5,9 @@ import { WalletButton } from "@/components/counter/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { TokenList, TokenListRef } from "./TokenList";
 import { ListingForm } from "./ListingForm";
-import { CreateTokenForm } from "./CreateTokenForm";
 import { ActiveListings } from "./ActiveListings";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useState, useRef } from "react";
 
 interface TokenInfo {
@@ -65,13 +66,19 @@ export function MarketplaceCard() {
       </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* 左侧：代币创建和选择 */}
+        {/* 左侧：代币选择 */}
         <div className="space-y-4">
-          <CreateTokenForm 
-            onTokenCreated={() => {
-              tokenListRef.current?.refetch();
-            }}
-          />
+          <Card className="bg-black/20 backdrop-blur-sm border border-gray-800">
+            <CardContent className="p-6">
+              <Link 
+                href="/token/new"
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                创建新代币
+              </Link>
+            </CardContent>
+          </Card>
           <TokenList 
             ref={tokenListRef}
             selectedToken={selectedToken}

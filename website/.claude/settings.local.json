@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/timqian/Documents/code/timqian/puzi.io/website/app/token/new)",
+      "Bash(pnpm add @irys/sdk)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
