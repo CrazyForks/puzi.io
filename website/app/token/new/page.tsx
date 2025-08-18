@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletButton } from "@/components/counter/WalletButton";
 import { createToken } from "@/lib/metaplex/token";
 import { toast } from "sonner";
 
@@ -74,14 +73,13 @@ export default function NewToken() {
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10"></div>
       
       <div className="relative z-10 max-w-2xl mx-auto">
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8">
           <button
             onClick={() => router.push("/")}
             className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
           >
             ← 返回首页
           </button>
-          <WalletButton />
         </div>
 
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-800">

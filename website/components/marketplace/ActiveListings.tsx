@@ -10,9 +10,10 @@ import { useState } from "react";
 
 interface ActiveListingsProps {
   onRefresh?: () => void;
+  userAddress?: string;
 }
 
-export function ActiveListings({ onRefresh }: ActiveListingsProps) {
+export function ActiveListings({ onRefresh, userAddress }: ActiveListingsProps) {
   const { publicKey, connected } = useWallet();
   const { listings, userListings, otherListings, loading, error, refetch } = useActiveListings();
   const { cancelListing, loading: cancelLoading } = useCancelListing();
@@ -37,6 +38,12 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
   };
 
   const getDisplayListings = () => {
+    // If userAddress is provided, filter listings by that address
+    if (userAddress) {
+      return listings.filter(listing => listing.seller === userAddress);
+    }
+    
+    // Otherwise use tab-based filtering
     switch (activeTab) {
       case "mine":
         return userListings;
@@ -123,7 +130,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
         <div className="flex justify-between items-center">
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            市场卖单 ({listings.length})
+            {userAddress ? `在售商品 (${displayListings.length})` : `市场卖单 (${listings.length})`}
           </CardTitle>
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-1" />
@@ -131,8 +138,8 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
           </Button>
         </div>
 
-        {/* 标签页 */}
-        {connected && (
+        {/* 标签页 - Only show when not filtering by specific user */}
+        {connected && !userAddress && (
           <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md">
             <button
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
