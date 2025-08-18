@@ -1,0 +1,195 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
+import { useTokenMetadata } from "./useTokenMetadata";
+
+interface TokenInfo {
+  mint: string;
+  amount: number;
+  name?: string;
+  symbol?: string;
+  decimals: number;
+  logoURI?: string;
+}
+
+// 缓存管理
+const tokenCache = new Map<string, { data: TokenInfo[]; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30秒缓存
+const RATE_LIMIT_DELAY = 1000; // 1秒防抖
+const MAX_CACHE_SIZE = 50; // 最大缓存条目数
+
+// 清理过期缓存
+const cleanupCache = () => {
+  const now = Date.now();
+  const entries = Array.from(tokenCache.entries());
+  
+  // 删除过期条目
+  for (const [key, value] of entries) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      tokenCache.delete(key);
+    }
+  }
+  
+  // 如果缓存仍然太大，删除最旧的条目
+  if (tokenCache.size > MAX_CACHE_SIZE) {
+    const sortedEntries = entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toDelete = sortedEntries.slice(0, tokenCache.size - MAX_CACHE_SIZE);
+    for (const [key] of toDelete) {
+      tokenCache.delete(key);
+    }
+  }
+};
+
+// 定期清理缓存
+setInterval(cleanupCache, 60000); // 每分钟清理一次
+
+export function useTokenAccounts() {
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+  const [tokens, setTokens] = useState<TokenInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { getTokenMetadata } = useTokenMetadata();
+
+  const fetchTokenAccounts = useCallback(async (forceRefresh = false) => {
+    if (!publicKey || !connection) {
+      setTokens([]);
+      return;
+    }
+
+    const cacheKey = publicKey.toBase58();
+    const now = Date.now();
+
+    // 检查缓存
+    if (!forceRefresh) {
+      const cached = tokenCache.get(cacheKey);
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        setTokens(cached.data);
+        return;
+      }
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 添加延迟以避免速率限制
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
+
+      const tokenList: TokenInfo[] = [];
+
+      // 首先获取SOL余额
+      try {
+        const solBalance = await connection.getBalance(publicKey, 'confirmed');
+        if (solBalance > 0) {
+          tokenList.push({
+            mint: "So11111111111111111111111111111111111111112", // SOL的mint地址
+            amount: solBalance,
+            name: "Solana",
+            symbol: "SOL",
+            decimals: 9,
+          });
+        }
+      } catch (solError) {
+        console.warn("获取SOL余额失败:", solError);
+      }
+
+      // 获取所有SPL代币账户 - 使用更保守的配置
+      let tokenAccounts;
+      try {
+        tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          publicKey,
+          {
+            programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+          },
+          'confirmed' // 使用confirmed commitment减少RPC负载
+        );
+      } catch (rpcError: unknown) {
+        const error = rpcError as Error;
+        if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+          throw new Error("请求过于频繁，请稍后再试");
+        }
+        throw rpcError;
+      }
+
+      for (const tokenAccount of tokenAccounts.value) {
+        const accountInfo = tokenAccount.account.data.parsed.info;
+        const mintAddress = accountInfo.mint;
+        const amount = parseInt(accountInfo.tokenAmount.amount);
+        const decimals = accountInfo.tokenAmount.decimals;
+
+        // 只显示余额大于0的代币
+        if (amount > 0) {
+          try {
+            // 首先尝试从本地存储获取代币元数据
+            const savedMetadata = getTokenMetadata(mintAddress);
+            
+            const tokenMetadata = savedMetadata || {
+              name: `Token ${mintAddress.slice(0, 8)}`,
+              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
+            };
+
+            tokenList.push({
+              mint: mintAddress,
+              amount,
+              name: tokenMetadata.name,
+              symbol: tokenMetadata.symbol,
+              decimals,
+            });
+          } catch {
+            // 如果获取元数据失败，使用默认值
+            tokenList.push({
+              mint: mintAddress,
+              amount,
+              name: `Token ${mintAddress.slice(0, 8)}`,
+              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
+              decimals,
+            });
+          }
+        }
+      }
+
+      // 缓存结果
+      tokenCache.set(cacheKey, {
+        data: tokenList,
+        timestamp: now,
+      });
+
+      setTokens(tokenList);
+    } catch (err: unknown) {
+      console.error("Failed to fetch token accounts:", err);
+      
+      let errorMessage = "获取代币列表失败";
+      const error = err as Error;
+      if (error.message?.includes("请求过于频繁")) {
+        errorMessage = "请求过于频繁，请稍后再试";
+      } else if (error.message?.includes("429")) {
+        errorMessage = "网络繁忙，请稍后刷新";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [publicKey, connection, getTokenMetadata]);
+
+  useEffect(() => {
+    fetchTokenAccounts();
+  }, [fetchTokenAccounts]);
+
+  // 创建带防抖的refetch函数
+  const refetch = useCallback(() => {
+    fetchTokenAccounts(true); // 强制刷新，忽略缓存
+  }, [fetchTokenAccounts]);
+
+  return {
+    tokens,
+    loading,
+    error,
+    refetch,
+  };
+}

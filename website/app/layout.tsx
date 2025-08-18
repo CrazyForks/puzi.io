@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solana Counter App",
-  description: "A minimal frontend for Anchor counter program",
+  title: "Puzi.io - 代币交易市场",
+  description: "去中心化的代币交易平台，每个人都该开个铺子",
 };
 
 export default function RootLayout({

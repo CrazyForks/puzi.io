@@ -9,12 +9,12 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 
-import { Counter } from "@/anchor-idl/idl";
+import { PuziContracts } from "@/anchor-idl/idl";
 import Idl from "@/anchor-idl/idl.json";
 import { useEffect } from "react";
 
 interface UseProgramReturn {
-  program: anchor.Program<Counter>;
+  program: anchor.Program<PuziContracts>;
   counterAddress: PublicKey;
   publicKey: PublicKey | null;
   connected: boolean;
@@ -38,17 +38,15 @@ export function useProgram(): UseProgramReturn {
     const provider = new anchor.AnchorProvider(connection, wallet, {
       preflightCommitment: "confirmed",
     });
-    program = new anchor.Program<Counter>(Idl, provider);
+    program = new anchor.Program<PuziContracts>(Idl, provider);
   } else {
     // Create program with just connection for read-only operations
-    program = new anchor.Program<Counter>(Idl, { connection });
+    program = new anchor.Program<PuziContracts>(Idl, { connection });
   }
 
-  // Get the counter account address
-  const counterAddress = PublicKey.findProgramAddressSync(
-    [Buffer.from("counter")],
-    new PublicKey(Idl.address)
-  )[0];
+  // For marketplace, we don't need a counter address
+  // This is placeholder for compatibility
+  const counterAddress = PublicKey.default;
 
   // Fund connected wallet with devnet SOL
   useEffect(() => {
@@ -68,7 +66,7 @@ export function useProgram(): UseProgramReturn {
     };
 
     airdropDevnetSol();
-  }, [publicKey]);
+  }, [publicKey, connection]);
 
   return {
     program,
