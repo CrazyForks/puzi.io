@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { useTokenMetadata } from "./useTokenMetadata";
+import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 
 interface TokenInfo {
   mint: string;
@@ -51,7 +51,7 @@ export function useTokenAccounts() {
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { getTokenMetadata } = useTokenMetadata();
+  const { fetchTokenMetadata } = useOnChainTokenMetadata();
 
   const fetchTokenAccounts = useCallback(async (forceRefresh = false) => {
     if (!publicKey || !connection) {
@@ -122,42 +122,65 @@ export function useTokenAccounts() {
 
         // 只显示余额大于0的代币
         if (amount > 0) {
-          try {
-            // 首先尝试从本地存储获取代币元数据
-            const savedMetadata = getTokenMetadata(mintAddress);
-            
-            const tokenMetadata = savedMetadata || {
-              name: `Token ${mintAddress.slice(0, 8)}`,
-              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
-            };
-
-            tokenList.push({
-              mint: mintAddress,
-              amount,
-              name: tokenMetadata.name,
-              symbol: tokenMetadata.symbol,
-              decimals,
-            });
-          } catch {
-            // 如果获取元数据失败，使用默认值
-            tokenList.push({
-              mint: mintAddress,
-              amount,
-              name: `Token ${mintAddress.slice(0, 8)}`,
-              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
-              decimals,
-            });
-          }
+          // 先添加基本信息，后续异步获取元数据
+          tokenList.push({
+            mint: mintAddress,
+            amount,
+            name: `Token ${mintAddress.slice(0, 8)}`,
+            symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
+            decimals,
+          });
         }
       }
 
+      // 先设置基本信息
+      setTokens(tokenList);
+      
       // 缓存结果
       tokenCache.set(cacheKey, {
         data: tokenList,
         timestamp: now,
       });
 
-      setTokens(tokenList);
+      // 异步获取所有代币的链上元数据
+      const mintAddresses = tokenList
+        .filter(token => token.mint !== "So11111111111111111111111111111111111111112")
+        .map(token => token.mint);
+      
+      if (mintAddresses.length > 0) {
+        // 并行获取所有代币的元数据
+        const metadataPromises = mintAddresses.map(async (mintAddress) => {
+          const metadata = await fetchTokenMetadata(mintAddress);
+          return { mintAddress, metadata };
+        });
+        
+        const metadataResults = await Promise.allSettled(metadataPromises);
+        
+        // 更新代币信息
+        const updatedTokenList = tokenList.map(token => {
+          const result = metadataResults.find(
+            r => r.status === 'fulfilled' && r.value.mintAddress === token.mint
+          );
+          
+          if (result && result.status === 'fulfilled' && result.value.metadata) {
+            return {
+              ...token,
+              name: result.value.metadata.name,
+              symbol: result.value.metadata.symbol,
+              logoURI: result.value.metadata.image,
+            };
+          }
+          
+          return token;
+        });
+        
+        // 更新状态和缓存
+        setTokens(updatedTokenList);
+        tokenCache.set(cacheKey, {
+          data: updatedTokenList,
+          timestamp: now,
+        });
+      }
     } catch (err: unknown) {
       console.error("Failed to fetch token accounts:", err);
       
@@ -175,7 +198,7 @@ export function useTokenAccounts() {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, connection, getTokenMetadata]);
+  }, [publicKey, connection, fetchTokenMetadata]);
 
   useEffect(() => {
     fetchTokenAccounts();

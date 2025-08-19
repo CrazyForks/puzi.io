@@ -114,7 +114,7 @@ export function useCancelListing() {
         console.log("Building cancel listing instruction...");
         const instruction = await program.methods
           .cancelListing()
-          .accounts({
+          .accountsPartial({
             seller: publicKey,
             listing: listingPda,
             sellerSellToken,

@@ -3,9 +3,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
-import { getMint } from "@solana/spl-token";
 import { PuziContracts, IDL } from "@/anchor-idl/idl";
-import { useTokenMetadata } from "./useTokenMetadata";
+import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 
 interface ListingInfo {
   address: string;
@@ -18,6 +17,8 @@ interface ListingInfo {
   isActive: boolean;
   sellTokenName?: string;
   sellTokenSymbol?: string;
+  sellTokenDescription?: string;
+  sellTokenImage?: string;
   sellTokenDecimals?: number;
   buyTokenName?: string;
   buyTokenSymbol?: string;
@@ -34,7 +35,7 @@ export function useActiveListings() {
   const [listings, setListings] = useState<ListingInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { getTokenMetadata } = useTokenMetadata();
+  const { fetchTokenMetadata } = useOnChainTokenMetadata();
 
   const fetchActiveListings = useCallback(async (forceRefresh = false) => {
     if (!connection) {
@@ -78,52 +79,90 @@ export function useActiveListings() {
           continue;
         }
 
-        // 获取代币元数据
-        const sellTokenMetadata = getTokenMetadata(listing.sellMint.toBase58()) || {
-          name: listing.sellMint.toBase58() === "So11111111111111111111111111111111111111112" 
-            ? "Solana" 
-            : `Token ${listing.sellMint.toBase58().slice(0, 8)}`,
-          symbol: listing.sellMint.toBase58() === "So11111111111111111111111111111111111111112" 
-            ? "SOL" 
-            : `TK${listing.sellMint.toBase58().slice(0, 4).toUpperCase()}`
-        };
+        // 从链上获取代币元数据
+        const sellMintAddress = listing.sellMint.toBase58();
+        const buyMintAddress = listing.buyMint.toBase58();
+        
+        const [sellTokenMetadata, buyTokenMetadata] = await Promise.all([
+          fetchTokenMetadata(sellMintAddress),
+          fetchTokenMetadata(buyMintAddress)
+        ]);
 
-        const buyTokenMetadata = getTokenMetadata(listing.buyMint.toBase58()) || {
-          name: listing.buyMint.toBase58() === "So11111111111111111111111111111111111111112" 
-            ? "Solana" 
-            : listing.buyMint.toBase58() === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-            ? "USD Coin"
-            : `Token ${listing.buyMint.toBase58().slice(0, 8)}`,
-          symbol: listing.buyMint.toBase58() === "So11111111111111111111111111111111111111112" 
-            ? "SOL" 
-            : listing.buyMint.toBase58() === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-            ? "USDC"
-            : `TK${listing.buyMint.toBase58().slice(0, 4).toUpperCase()}`
-        };
-
-        // 获取代币小数位数
-        let sellTokenDecimals = 9; // 默认9位小数
-        let buyTokenDecimals = 9;
-
-        try {
-          // 对于SOL使用固定的9位小数
-          if (listing.sellMint.toBase58() !== "So11111111111111111111111111111111111111112") {
-            const sellMintInfo = await getMint(connection, listing.sellMint);
-            sellTokenDecimals = sellMintInfo.decimals;
-          }
-          
-          if (listing.buyMint.toBase58() !== "So11111111111111111111111111111111111111112") {
-            if (listing.buyMint.toBase58() === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v") {
-              buyTokenDecimals = 6; // USDC使用6位小数
-            } else {
-              const buyMintInfo = await getMint(connection, listing.buyMint);
-              buyTokenDecimals = buyMintInfo.decimals;
-            }
-          }
-        } catch (error) {
-          console.warn("获取代币小数位数失败，使用默认值:", error);
-          // 使用默认值
+        // 如果无法获取完整元数据，至少尝试获取 decimals
+        // 重要：不要假设默认值，必须获取实际的 decimals
+        let sellTokenDecimals: number | undefined = undefined;
+        let buyTokenDecimals: number | undefined = undefined;
+        
+        if (sellTokenMetadata) {
+          sellTokenDecimals = sellTokenMetadata.decimals;
+          console.log(`Got decimals from metadata for ${sellMintAddress}: ${sellTokenDecimals}`);
         }
+        
+        // 如果还没有获取到 decimals，必须直接从 mint 获取
+        if (sellTokenDecimals === undefined) {
+          try {
+            if (sellMintAddress === "So11111111111111111111111111111111111111112") {
+              sellTokenDecimals = 9; // SOL 固定9位小数
+            } else {
+              const { getMint } = await import("@solana/spl-token");
+              const mintInfo = await getMint(connection, listing.sellMint);
+              sellTokenDecimals = mintInfo.decimals;
+              console.log(`Got decimals from getMint for ${sellMintAddress}: ${sellTokenDecimals}`);
+            }
+          } catch (error) {
+            console.error("Failed to get sell token decimals:", error);
+            // 如果还是失败了，使用0作为最保守的默认值
+            sellTokenDecimals = 0;
+          }
+        }
+        
+        if (buyTokenMetadata) {
+          buyTokenDecimals = buyTokenMetadata.decimals;
+        }
+        
+        // 如果还没有获取到 decimals，必须直接从 mint 获取
+        if (buyTokenDecimals === undefined) {
+          try {
+            if (buyMintAddress === "So11111111111111111111111111111111111111112") {
+              buyTokenDecimals = 9; // SOL
+            } else if (buyMintAddress === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
+              buyTokenDecimals = 6; // USDC
+            } else {
+              const { getMint } = await import("@solana/spl-token");
+              const mintInfo = await getMint(connection, listing.buyMint);
+              buyTokenDecimals = mintInfo.decimals;
+            }
+          } catch (error) {
+            console.error("Failed to get buy token decimals:", error);
+            // 如果还是失败了，使用0作为最保守的默认值
+            buyTokenDecimals = 0;
+          }
+        }
+
+        // 构建 token 信息对象
+        const sellTokenInfo = sellTokenMetadata || {
+          name: `Token ${sellMintAddress.slice(0, 8)}`,
+          symbol: `TK${sellMintAddress.slice(0, 4).toUpperCase()}`,
+          decimals: sellTokenDecimals,
+          description: "",
+          image: ""
+        };
+
+        const buyTokenInfo = buyTokenMetadata || {
+          name: `Token ${buyMintAddress.slice(0, 8)}`,
+          symbol: `TK${buyMintAddress.slice(0, 4).toUpperCase()}`,
+          decimals: buyTokenDecimals
+        };
+
+        // 调试日志
+        console.log("Listing details:", {
+          sellMint: sellMintAddress,
+          rawAmount: listing.amount.toNumber(),
+          sellTokenDecimals,
+          divisor: Math.pow(10, sellTokenDecimals),
+          formattedAmount: listing.amount.toNumber() / Math.pow(10, sellTokenDecimals),
+          expected: "如果你上架了100个代币且decimals=0，rawAmount应该是100"
+        });
 
         activeListings.push({
           address: listingAccount.publicKey.toBase58(),
@@ -134,11 +173,13 @@ export function useActiveListings() {
           amount: listing.amount.toNumber(),
           listingId: listing.listingId.toNumber(),
           isActive: listing.isActive,
-          sellTokenName: sellTokenMetadata.name,
-          sellTokenSymbol: sellTokenMetadata.symbol,
+          sellTokenName: sellTokenInfo.name,
+          sellTokenSymbol: sellTokenInfo.symbol,
+          sellTokenDescription: sellTokenInfo.description,
+          sellTokenImage: sellTokenInfo.image,
           sellTokenDecimals,
-          buyTokenName: buyTokenMetadata.name,
-          buyTokenSymbol: buyTokenMetadata.symbol,
+          buyTokenName: buyTokenInfo.name,
+          buyTokenSymbol: buyTokenInfo.symbol,
           buyTokenDecimals,
         });
       }
@@ -170,7 +211,7 @@ export function useActiveListings() {
     } finally {
       setLoading(false);
     }
-  }, [connection, getTokenMetadata]);
+  }, [connection, fetchTokenMetadata]);
 
   // 获取用户自己的卖单
   const getUserListings = useCallback(() => {

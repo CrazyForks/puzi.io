@@ -2,83 +2,49 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useActiveListings } from "./hooks/useActiveListings";
-import { usePurchase } from "./hooks/usePurchase";
-import { Loader2, ShoppingCart, RefreshCw } from "lucide-react";
+import { useCancelListing } from "./hooks/useCancelListing";
+import { Loader2, ShoppingCart, Trash2, RefreshCw } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { useState } from "react";
 import { getTokenByMint } from "@/config/known-tokens";
 
-interface ActiveListingsProps {
+interface UserListingsProps {
+  userAddress: string;
   onRefresh?: () => void;
 }
 
-export function ActiveListings({ onRefresh }: ActiveListingsProps) {
+export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
   const { publicKey, connected } = useWallet();
   const { listings, loading, error, refetch } = useActiveListings();
-  const { purchaseToken } = usePurchase();
-  const [purchaseAmounts, setPurchaseAmounts] = useState<Record<string, string>>({});
-  const [purchaseLoadingStates, setPurchaseLoadingStates] = useState<Record<string, boolean>>({});
+  const { cancelListing } = useCancelListing();
+  const [cancelLoadingStates, setCancelLoadingStates] = useState<Record<string, boolean>>({});
 
   const handleRefresh = () => {
     refetch();
     onRefresh?.();
   };
 
-  const handlePurchase = async (listing: any) => {
-    const inputAmount = purchaseAmounts[listing.address] || "1";
-    const amount = parseFloat(inputAmount);
+  const handleCancelListing = async (listing: { address: string; sellMint: string; listingId: number }) => {
+    setCancelLoadingStates(prev => ({ ...prev, [listing.address]: true }));
     
-    if (isNaN(amount) || amount <= 0) {
-      alert("请输入有效的购买数量");
-      return;
-    }
-
-    const decimals = listing.sellTokenDecimals ?? 9;
-    const buyAmountInSmallestUnit = Math.floor(amount * Math.pow(10, decimals));
-    
-    // 验证数量不超过库存
-    if (buyAmountInSmallestUnit > listing.amount) {
-      alert(`购买数量不能超过库存 (${formatAmount(listing.amount, decimals)})`);
-      return;
-    }
-
-    // 设置当前列表项的加载状态
-    setPurchaseLoadingStates(prev => ({ ...prev, [listing.address]: true }));
-
     try {
-      const success = await purchaseToken(
+      const success = await cancelListing(
         listing.address,
         listing.sellMint,
-        listing.buyMint,
-        listing.seller,
-        buyAmountInSmallestUnit,
-        listing.pricePerToken,
-        listing.listingId,
-        listing.sellTokenDecimals,
-        listing.buyTokenDecimals
+        listing.listingId
       );
       
       if (success) {
-        // 清空输入框并刷新列表
-        setPurchaseAmounts(prev => ({ ...prev, [listing.address]: "" }));
         refetch();
       }
     } finally {
-      // 清除加载状态
-      setPurchaseLoadingStates(prev => ({ ...prev, [listing.address]: false }));
+      setCancelLoadingStates(prev => ({ ...prev, [listing.address]: false }));
     }
   };
 
-  const handleAmountChange = (listingAddress: string, value: string) => {
-    // 只允许数字和小数点
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setPurchaseAmounts(prev => ({ ...prev, [listingAddress]: value }));
-    }
-  };
-
+  const userListings = listings.filter(listing => listing.seller === userAddress);
 
   const formatPrice = (price: number, decimals: number = 9) => {
     return (price / Math.pow(10, decimals)).toLocaleString(undefined, {
@@ -94,7 +60,6 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
     });
   };
 
-
   const getTokenColor = (symbol?: string) => {
     if (symbol === "SOL") {
       return "bg-gradient-to-r from-green-400 to-blue-500";
@@ -108,7 +73,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            市场卖单
+            在售商品
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -127,7 +92,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            市场卖单
+            在售商品
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -142,14 +107,13 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
     );
   }
 
-
   return (
     <Card className="bg-black/20 backdrop-blur-sm border border-gray-800">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            市场卖单 ({listings.length})
+            在售商品 ({userListings.length})
           </CardTitle>
           <Button onClick={handleRefresh} variant="outline" size="sm" className="hover:bg-white/10">
             <RefreshCw className="w-4 h-4 mr-1" />
@@ -159,7 +123,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
       </CardHeader>
       
       <CardContent>
-        {listings.length === 0 ? (
+        {userListings.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 mb-2 text-lg">
@@ -171,7 +135,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2">
-            {listings.map((listing) => (
+            {userListings.map((listing) => (
               <div
                 key={listing.address}
                 className="group relative p-5 rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/30 to-gray-900/30 hover:from-gray-800/50 hover:to-gray-900/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-900/10 hover:border-purple-600/30"
@@ -242,44 +206,22 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
                   </div>
                 </div>
 
-                {/* Purchase Quantity Input */}
-                {connected && listing.seller !== publicKey?.toBase58() && (
-                  <div className="mb-2">
-                    <label className="text-xs text-gray-400 mb-1 block">购买数量:</label>
-                    <Input
-                      type="text"
-                      placeholder="输入数量"
-                      value={purchaseAmounts[listing.address] || ""}
-                      onChange={(e) => handleAmountChange(listing.address, e.target.value)}
-                      className="w-full h-8 text-sm bg-gray-900/50 border-gray-700 text-white"
-                    />
-                    <div className="text-xs text-gray-500 mt-1">
-                      最大: {formatAmount(listing.amount, listing.sellTokenDecimals ?? 9)}
-                    </div>
-                  </div>
-                )}
-
                 {/* Action Buttons */}
                 <div className="space-y-2">
-                  {connected ? (
-                    listing.seller !== publicKey?.toBase58() && (
-                      <Button
-                        size="sm"
-                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
-                        onClick={() => handlePurchase(listing)}
-                        disabled={purchaseLoadingStates[listing.address]}
-                      >
-                        {purchaseLoadingStates[listing.address] ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                        )}
-                        购买
-                      </Button>
-                    )
-                  ) : (
-                    <Button size="sm" disabled variant="outline" className="w-full">
-                      请连接钱包
+                  {connected && publicKey && listing.seller === publicKey.toBase58() && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-red-400 border-red-400/30 hover:bg-red-400/10"
+                      onClick={() => handleCancelListing(listing)}
+                      disabled={cancelLoadingStates[listing.address]}
+                    >
+                      {cancelLoadingStates[listing.address] ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      取消卖单
                     </Button>
                   )}
                 </div>

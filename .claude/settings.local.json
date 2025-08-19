@@ -4,7 +4,8 @@
       "Bash(anchor build)",
       "Bash(pnpm run:*)",
       "Bash(npm run lint)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

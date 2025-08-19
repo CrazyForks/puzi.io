@@ -3,8 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ShoppingCart, Loader2 } from "lucide-react";
+import { ShoppingCart, Loader2, ChevronDown } from "lucide-react";
 import { useCreateListing } from "./hooks/useCreateListing";
+import { PAYMENT_TOKENS, KnownToken } from "@/config/known-tokens";
 
 interface TokenInfo {
   mint: string;
@@ -23,14 +24,8 @@ interface ListingFormProps {
 export function ListingForm({ selectedToken, onListingComplete }: ListingFormProps) {
   const [sellAmount, setSellAmount] = useState("");
   const [pricePerToken, setPricePerToken] = useState("");
-  // 根据选中的代币动态设置购买币种
-  const getBuyMint = () => {
-    if (selectedToken?.symbol === "SOL") {
-      // 如果卖SOL，用USDC购买 (这里用一个测试USDC地址，实际应该用真实的USDC mint)
-      return "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // USDC mint
-    }
-    return "So11111111111111111111111111111111111111112"; // SOL mint
-  };
+  const [selectedPaymentToken, setSelectedPaymentToken] = useState<KnownToken>(PAYMENT_TOKENS[0]); // 默认选择USDC
+  const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
   
   const { createListing, loading } = useCreateListing();
 
@@ -53,14 +48,11 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
       return;
     }
 
-    const buyMint = getBuyMint();
-    const buyDecimals = selectedToken.symbol === "SOL" ? 6 : 9; // USDC has 6 decimals, SOL has 9
-    
     const success = await createListing({
       sellMint: selectedToken.mint,
-      buyMint,
+      buyMint: selectedPaymentToken.mint,
       amount: Math.floor(sellAmountNumber * Math.pow(10, selectedToken.decimals)),
-      pricePerToken: Math.floor(priceNumber * Math.pow(10, buyDecimals)),
+      pricePerToken: Math.floor(priceNumber * Math.pow(10, selectedPaymentToken.decimals)),
     });
 
     if (success) {
@@ -156,16 +148,72 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
             </p>
           </div>
 
+          {/* 支付代币选择 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              支付代币
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowPaymentDropdown(!showPaymentDropdown)}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white text-left flex items-center justify-between hover:bg-gray-700 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  {selectedPaymentToken.logoURI && (
+                    <img 
+                      src={selectedPaymentToken.logoURI} 
+                      alt={selectedPaymentToken.symbol}
+                      className="w-5 h-5 rounded-full"
+                    />
+                  )}
+                  <span>{selectedPaymentToken.symbol}</span>
+                  <span className="text-gray-400 text-sm">{selectedPaymentToken.name}</span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </button>
+              
+              {showPaymentDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {PAYMENT_TOKENS.map((token) => (
+                    <button
+                      key={token.mint}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPaymentToken(token);
+                        setShowPaymentDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    >
+                      {token.logoURI && (
+                        <img 
+                          src={token.logoURI} 
+                          alt={token.symbol}
+                          className="w-5 h-5 rounded-full"
+                        />
+                      )}
+                      <span className="text-white">{token.symbol}</span>
+                      <span className="text-gray-400 text-sm">{token.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              买家需要使用 {selectedPaymentToken.symbol} 来购买您的代币
+            </p>
+          </div>
+
           {/* 单价 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              {selectedToken.symbol === "SOL" ? "单价 (USDC)" : "单价 (SOL)"}
+              单价 ({selectedPaymentToken.symbol})
             </label>
             <input
               type="number"
               value={pricePerToken}
               onChange={(e) => setPricePerToken(e.target.value)}
-              placeholder={selectedToken.symbol === "SOL" ? "每个SOL的价格 (USDC)" : "每个代币的价格 (SOL)"}
+              placeholder={`每个${selectedToken.symbol || '代币'}的价格 (${selectedPaymentToken.symbol})`}
               step="any"
               min="0"
               className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
@@ -178,7 +226,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
             <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
               <p className="text-sm text-gray-300">总价预览:</p>
               <p className="text-lg font-bold text-white">
-                {(parseFloat(sellAmount) * parseFloat(pricePerToken)).toFixed(4)} {selectedToken.symbol === "SOL" ? "USDC" : "SOL"}
+                {(parseFloat(sellAmount) * parseFloat(pricePerToken)).toFixed(4)} {selectedPaymentToken.symbol}
               </p>
             </div>
           )}

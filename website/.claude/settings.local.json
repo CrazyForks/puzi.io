@@ -5,6 +5,9 @@
       "Bash(pnpm add @irys/sdk)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "/Users/timqian/Documents/code/timqian/puzi.io/puzi_contracts/"
+    ]
   }
 }

@@ -4,7 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useWallet } from "@solana/wallet-adapter-react";
 import { TokenList, TokenListRef } from "@/components/marketplace/TokenList";
 import { ListingForm } from "@/components/marketplace/ListingForm";
-import { ActiveListings } from "@/components/marketplace/ActiveListings";
+import { UserListings } from "@/components/marketplace/UserListings";
 import Link from "next/link";
 import { Plus, Store, Copy, Check } from "lucide-react";
 import { useState, useRef } from "react";
@@ -102,7 +102,7 @@ export default function UserShop() {
         {/* User's Active Listings */}
         <div>
           <h2 className="text-xl font-bold text-white mb-4">在售商品</h2>
-          <ActiveListings 
+          <UserListings 
             userAddress={address}
             onRefresh={() => {}}
           />
