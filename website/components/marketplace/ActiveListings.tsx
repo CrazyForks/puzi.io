@@ -243,7 +243,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
                 </div>
 
                 {/* Purchase Quantity Input */}
-                {connected && listing.seller !== publicKey?.toBase58() && (
+                {connected && (
                   <div className="mb-2">
                     <label className="text-xs text-gray-400 mb-1 block">购买数量:</label>
                     <Input
@@ -262,21 +262,19 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
                 {/* Action Buttons */}
                 <div className="space-y-2">
                   {connected ? (
-                    listing.seller !== publicKey?.toBase58() && (
-                      <Button
-                        size="sm"
-                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
-                        onClick={() => handlePurchase(listing)}
-                        disabled={purchaseLoadingStates[listing.address]}
-                      >
-                        {purchaseLoadingStates[listing.address] ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                        )}
-                        购买
-                      </Button>
-                    )
+                    <Button
+                      size="sm"
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
+                      onClick={() => handlePurchase(listing)}
+                      disabled={purchaseLoadingStates[listing.address]}
+                    >
+                      {purchaseLoadingStates[listing.address] ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                      )}
+                      购买
+                    </Button>
                   ) : (
                     <Button size="sm" disabled variant="outline" className="w-full">
                       请连接钱包
