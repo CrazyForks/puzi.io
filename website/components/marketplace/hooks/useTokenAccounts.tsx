@@ -14,37 +14,6 @@ interface TokenInfo {
   logoURI?: string;
 }
 
-// 缓存管理
-const tokenCache = new Map<string, { data: TokenInfo[]; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30秒缓存
-const RATE_LIMIT_DELAY = 1000; // 1秒防抖
-const MAX_CACHE_SIZE = 50; // 最大缓存条目数
-
-// 清理过期缓存
-const cleanupCache = () => {
-  const now = Date.now();
-  const entries = Array.from(tokenCache.entries());
-  
-  // 删除过期条目
-  for (const [key, value] of entries) {
-    if (now - value.timestamp > CACHE_DURATION) {
-      tokenCache.delete(key);
-    }
-  }
-  
-  // 如果缓存仍然太大，删除最旧的条目
-  if (tokenCache.size > MAX_CACHE_SIZE) {
-    const sortedEntries = entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    const toDelete = sortedEntries.slice(0, tokenCache.size - MAX_CACHE_SIZE);
-    for (const [key] of toDelete) {
-      tokenCache.delete(key);
-    }
-  }
-};
-
-// 定期清理缓存
-setInterval(cleanupCache, 60000); // 每分钟清理一次
-
 export function useTokenAccounts() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
@@ -53,30 +22,16 @@ export function useTokenAccounts() {
   const [error, setError] = useState<string | null>(null);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
 
-  const fetchTokenAccounts = useCallback(async (forceRefresh = false) => {
+  const fetchTokenAccounts = useCallback(async () => {
     if (!publicKey || !connection) {
       setTokens([]);
       return;
-    }
-
-    const cacheKey = publicKey.toBase58();
-    const now = Date.now();
-
-    // 检查缓存
-    if (!forceRefresh) {
-      const cached = tokenCache.get(cacheKey);
-      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-        setTokens(cached.data);
-        return;
-      }
     }
 
     setLoading(true);
     setError(null);
 
     try {
-      // 添加延迟以避免速率限制
-      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
 
       const tokenList: TokenInfo[] = [];
 
@@ -135,12 +90,6 @@ export function useTokenAccounts() {
 
       // 先设置基本信息
       setTokens(tokenList);
-      
-      // 缓存结果
-      tokenCache.set(cacheKey, {
-        data: tokenList,
-        timestamp: now,
-      });
 
       // 异步获取所有代币的链上元数据
       const mintAddresses = tokenList
@@ -174,12 +123,8 @@ export function useTokenAccounts() {
           return token;
         });
         
-        // 更新状态和缓存
+        // 更新状态
         setTokens(updatedTokenList);
-        tokenCache.set(cacheKey, {
-          data: updatedTokenList,
-          timestamp: now,
-        });
       }
     } catch (err: unknown) {
       console.error("Failed to fetch token accounts:", err);
@@ -204,9 +149,8 @@ export function useTokenAccounts() {
     fetchTokenAccounts();
   }, [fetchTokenAccounts]);
 
-  // 创建带防抖的refetch函数
   const refetch = useCallback(() => {
-    fetchTokenAccounts(true); // 强制刷新，忽略缓存
+    fetchTokenAccounts();
   }, [fetchTokenAccounts]);
 
   return {

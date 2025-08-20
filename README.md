@@ -15,3 +15,13 @@
 
 ## TODO
 - 买光之后卖单自动消失很好，租金去哪里了？
+- website 支持部署两种环境，devnet + mainnet
+- contract 支持原生 sol
+- 市场卖单翻页+ filter
+- 页面设计优化
+  - 
+
+## Dev net 
+
+- usdc dev: https://spl-token-faucet.com/?token-name=USDC-Dev
+- sol: https://faucet.solana.com/

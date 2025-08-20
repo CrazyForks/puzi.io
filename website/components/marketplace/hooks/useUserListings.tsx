@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 import { PuziContracts, IDL } from "@/anchor-idl/idl";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 
@@ -25,16 +26,15 @@ interface ListingInfo {
   buyTokenDecimals?: number;
 }
 
-export function useActiveListings() {
+export function useUserListings(userAddress: string) {
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
   const [listings, setListings] = useState<ListingInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
 
-  const fetchActiveListings = useCallback(async () => {
-    if (!connection) {
+  const fetchUserListings = useCallback(async () => {
+    if (!connection || !userAddress) {
       setListings([]);
       return;
     }
@@ -46,16 +46,24 @@ export function useActiveListings() {
       // 创建只读Program实例
       const program = new Program<PuziContracts>(IDL, { connection });
 
-      console.log("获取所有卖单...");
+      console.log(`获取用户 ${userAddress} 的卖单...`);
 
-      // 获取所有listing账户
-      const allListings = await program.account.listing.all();
+      // 使用过滤器只获取特定用户的listing账户
+      const userPubkey = new PublicKey(userAddress);
+      const userListings = await program.account.listing.all([
+        {
+          memcmp: {
+            offset: 8, // 跳过discriminator (8 bytes)
+            bytes: userPubkey.toBase58(),
+          },
+        },
+      ]);
       
-      console.log(`找到 ${allListings.length} 个卖单账户`);
+      console.log(`找到 ${userListings.length} 个用户卖单账户`);
 
       const activeListings: ListingInfo[] = [];
 
-      for (const listingAccount of allListings) {
+      for (const listingAccount of userListings) {
         const listing = listingAccount.account;
         
         // 只显示活跃的卖单
@@ -72,14 +80,12 @@ export function useActiveListings() {
           fetchTokenMetadata(buyMintAddress)
         ]);
 
-        // 如果无法获取完整元数据，至少尝试获取 decimals
-        // 重要：不要假设默认值，必须获取实际的 decimals
+        // 获取 decimals
         let sellTokenDecimals: number | undefined = undefined;
         let buyTokenDecimals: number | undefined = undefined;
         
         if (sellTokenMetadata) {
           sellTokenDecimals = sellTokenMetadata.decimals;
-          console.log(`Got decimals from metadata for ${sellMintAddress}: ${sellTokenDecimals}`);
         }
         
         // 如果还没有获取到 decimals，必须直接从 mint 获取
@@ -91,11 +97,9 @@ export function useActiveListings() {
               const { getMint } = await import("@solana/spl-token");
               const mintInfo = await getMint(connection, listing.sellMint);
               sellTokenDecimals = mintInfo.decimals;
-              console.log(`Got decimals from getMint for ${sellMintAddress}: ${sellTokenDecimals}`);
             }
           } catch (error) {
             console.error("Failed to get sell token decimals:", error);
-            // 如果还是失败了，使用0作为最保守的默认值
             sellTokenDecimals = 0;
           }
         }
@@ -118,7 +122,6 @@ export function useActiveListings() {
             }
           } catch (error) {
             console.error("Failed to get buy token decimals:", error);
-            // 如果还是失败了，使用0作为最保守的默认值
             buyTokenDecimals = 0;
           }
         }
@@ -137,16 +140,6 @@ export function useActiveListings() {
           symbol: `TK${buyMintAddress.slice(0, 4).toUpperCase()}`,
           decimals: buyTokenDecimals
         };
-
-        // 调试日志
-        console.log("Listing details:", {
-          sellMint: sellMintAddress,
-          rawAmount: listing.amount.toNumber(),
-          sellTokenDecimals,
-          divisor: Math.pow(10, sellTokenDecimals),
-          formattedAmount: listing.amount.toNumber() / Math.pow(10, sellTokenDecimals),
-          expected: "如果你上架了100个代币且decimals=0，rawAmount应该是100"
-        });
 
         activeListings.push({
           address: listingAccount.publicKey.toBase58(),
@@ -175,7 +168,7 @@ export function useActiveListings() {
       console.log(`找到 ${activeListings.length} 个活跃卖单`);
 
     } catch (err: unknown) {
-      console.error("获取卖单失败:", err);
+      console.error("获取用户卖单失败:", err);
       
       let errorMessage = "获取卖单失败";
       const error = err as Error;
@@ -189,32 +182,18 @@ export function useActiveListings() {
     } finally {
       setLoading(false);
     }
-  }, [connection, fetchTokenMetadata]);
-
-  // 获取用户自己的卖单
-  const getUserListings = useCallback(() => {
-    if (!publicKey) return [];
-    return listings.filter(listing => listing.seller === publicKey.toBase58());
-  }, [listings, publicKey]);
-
-  // 获取其他用户的卖单
-  const getOtherListings = useCallback(() => {
-    if (!publicKey) return listings;
-    return listings.filter(listing => listing.seller !== publicKey.toBase58());
-  }, [listings, publicKey]);
+  }, [connection, userAddress, fetchTokenMetadata]);
 
   useEffect(() => {
-    fetchActiveListings();
-  }, [fetchActiveListings]);
+    fetchUserListings();
+  }, [fetchUserListings]);
 
   const refetch = useCallback(() => {
-    fetchActiveListings();
-  }, [fetchActiveListings]);
+    fetchUserListings();
+  }, [fetchUserListings]);
 
   return {
     listings,
-    userListings: getUserListings(),
-    otherListings: getOtherListings(),
     loading,
     error,
     refetch,

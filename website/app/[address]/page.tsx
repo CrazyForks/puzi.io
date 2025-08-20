@@ -81,8 +81,8 @@ export default function UserShop() {
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                   >
                     <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden xs:inline">上架代币</span>
-                    <span className="xs:hidden">上架代币</span>
+                    <span className="hidden xs:inline">上架商品</span>
+                    <span className="xs:hidden">上架商品</span>
                   </button>
                   
                   <Link
@@ -90,8 +90,8 @@ export default function UserShop() {
                     className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                   >
                     <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden xs:inline">创建新代币</span>
-                    <span className="xs:hidden">创建新代币</span>
+                    <span className="hidden xs:inline">创建商品</span>
+                    <span className="xs:hidden">创建商品</span>
                   </Link>
                 </div>
               )}
@@ -101,7 +101,7 @@ export default function UserShop() {
 
         {/* User's Active Listings */}
         <div>
-          <h2 className="text-xl font-bold text-white mb-4">在售商品</h2>
+          {/* <h2 className="text-xl font-bold text-white mb-4">在售商品</h2> */}
           <UserListings 
             userAddress={address}
             onRefresh={() => {}}

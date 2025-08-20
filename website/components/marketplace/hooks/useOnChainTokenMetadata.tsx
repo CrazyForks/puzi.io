@@ -20,10 +20,6 @@ export interface OnChainTokenMetadata {
   supply?: string;
 }
 
-// 缓存管理
-const metadataCache = new Map<string, { data: OnChainTokenMetadata; timestamp: number }>();
-const CACHE_DURATION = 60000; // 60秒缓存
-
 export function useOnChainTokenMetadata() {
   const { connection } = useConnection();
 
@@ -32,37 +28,27 @@ export function useOnChainTokenMetadata() {
   ): Promise<OnChainTokenMetadata | null> => {
     if (!connection) return null;
 
-    // 检查缓存
-    const cached = metadataCache.get(mintAddress);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      return cached.data;
-    }
-
     try {
       // 特殊处理 SOL
       if (mintAddress === "So11111111111111111111111111111111111111112") {
-        const solMetadata: OnChainTokenMetadata = {
+        return {
           name: "Solana",
           symbol: "SOL",
           decimals: 9,
           description: "Solana Native Token",
           image: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
         };
-        metadataCache.set(mintAddress, { data: solMetadata, timestamp: Date.now() });
-        return solMetadata;
       }
 
       // 特殊处理 USDC
       if (mintAddress === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
-        const usdcMetadata: OnChainTokenMetadata = {
+        return {
           name: "USD Coin",
           symbol: "USDC",
           decimals: 6,
           description: "USD Coin",
           image: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png"
         };
-        metadataCache.set(mintAddress, { data: usdcMetadata, timestamp: Date.now() });
-        return usdcMetadata;
       }
 
       const mintPubkey = new PublicKey(mintAddress);
@@ -111,7 +97,7 @@ export function useOnChainTokenMetadata() {
           }
         }
 
-        const metadata: OnChainTokenMetadata = {
+        return {
           name,
           symbol,
           description,
@@ -120,23 +106,16 @@ export function useOnChainTokenMetadata() {
           supply: mintInfo.supply.toString()
         };
 
-        // 缓存结果
-        metadataCache.set(mintAddress, { data: metadata, timestamp: Date.now() });
-        return metadata;
-
       } catch (metadataError) {
         // 如果获取元数据失败，返回基础信息
         console.warn("Failed to fetch token metadata, using basic info:", metadataError);
         
-        const basicMetadata: OnChainTokenMetadata = {
+        return {
           name: `Token ${mintAddress.slice(0, 8)}`,
           symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
           decimals: mintInfo.decimals,
           supply: mintInfo.supply.toString()
         };
-
-        metadataCache.set(mintAddress, { data: basicMetadata, timestamp: Date.now() });
-        return basicMetadata;
       }
 
     } catch (error) {
@@ -165,7 +144,6 @@ export function useOnChainTokenMetadata() {
 
   return {
     fetchTokenMetadata,
-    fetchMultipleTokenMetadata,
-    clearCache: () => metadataCache.clear()
+    fetchMultipleTokenMetadata
   };
 }
