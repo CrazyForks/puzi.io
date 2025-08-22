@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useUserListings } from "./hooks/useUserListings";
 import { usePurchase } from "./hooks/usePurchase";
 import { useCancelListing } from "./hooks/useCancelListing";
-import { Loader2, ShoppingCart, RefreshCw } from "lucide-react";
+import { Loader2, ShoppingCart, RefreshCw, Store, ExternalLink } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 import { getTokenByMint } from "@/config/known-tokens";
@@ -23,9 +23,11 @@ import {
 interface UserListingsProps {
   userAddress: string;
   onRefresh?: () => void;
+  onAddListing?: () => void;
+  showAddButton?: boolean;
 }
 
-export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
+export function UserListings({ userAddress, onRefresh, onAddListing, showAddButton = false }: UserListingsProps) {
   const { publicKey, connected } = useWallet();
   const { listings: userListings, loading, error, refetch } = useUserListings(userAddress);
   const { purchaseToken } = usePurchase();
@@ -96,7 +98,7 @@ export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
       if (success) {
         // 关闭弹窗并刷新列表
         setSelectedListing(null);
-        setPurchaseAmount("1");
+        // 不需要重置购买数量，下次打开会自动设置为全部
         refetch();
       }
     } finally {
@@ -112,8 +114,11 @@ export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
     }
   };
 
-  const formatPrice = (price: number, decimals: number = 9) => {
-    return (price / Math.pow(10, decimals)).toLocaleString(undefined, {
+  const formatPrice = (pricePerToken: number, buyDecimals: number = 9, sellDecimals: number = 9) => {
+    // pricePerToken 现在直接是每个完整代币的价格（以买币最小单位存储）
+    // 转换为UI显示：除以买币的小数位
+    const displayPrice = pricePerToken / Math.pow(10, buyDecimals);
+    return displayPrice.toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6
     });
@@ -183,15 +188,33 @@ export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
         </CardHeader>
         
         <CardContent>
-          {userListings.length === 0 ? (
-            <div className="text-center py-12">
-              <ShoppingCart className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400 mb-2 text-lg">
-                暂无卖单
+          {userListings.length === 0 && !showAddButton ? (
+            <div className="text-center py-16">
+              <ShoppingCart className="w-20 h-20 text-gray-700 mx-auto mb-4 opacity-50" />
+              <p className="text-gray-500 text-lg font-medium">
+                暂无在售商品
+              </p>
+              <p className="text-gray-600 text-sm mt-2">
+                {showAddButton ? "点击上架按钮开始销售" : "店主还没有上架任何商品"}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* 上架商品按钮 - 放在第一个位置 */}
+              {showAddButton && (
+                <button
+                  onClick={onAddListing}
+                  className="border-2 border-dashed border-gray-600 rounded-xl p-5 flex flex-col items-center justify-center gap-3 hover:border-purple-500 hover:bg-purple-500/5 transition-all group h-full min-h-[280px] cursor-pointer"
+                >
+                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                    <Store className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <span className="text-gray-400 group-hover:text-white transition-colors font-medium">
+                    上架商品
+                  </span>
+                </button>
+              )}
+              
               {userListings.map((listing) => (
                 <ListingCard
                   key={listing.address}
@@ -199,7 +222,12 @@ export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
                   connected={connected}
                   isOwner={publicKey?.toBase58() === listing.seller}
                   showCancelButton={publicKey?.toBase58() === userAddress}
-                  onPurchaseClick={setSelectedListing}
+                  onPurchaseClick={(listing) => {
+                    setSelectedListing(listing);
+                    // 设置购买数量为全部
+                    const maxAmount = formatAmount(listing.amount, listing.sellTokenDecimals ?? 9);
+                    setPurchaseAmount(maxAmount);
+                  }}
                   onCancelClick={handleCancelListing}
                   purchaseLoading={purchaseLoadingStates[listing.address]}
                   cancelLoading={cancelLoadingStates[listing.address]}
@@ -212,58 +240,87 @@ export function UserListings({ userAddress, onRefresh }: UserListingsProps) {
 
       {/* Purchase Modal */}
       <Dialog open={!!selectedListing} onOpenChange={(open) => !open && setSelectedListing(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogContent className="bg-gray-900 border-gray-800 max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">购买确认</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              {selectedListing && (
-                <>
-                  购买 {selectedListing.sellTokenName || selectedListing.sellTokenSymbol}
-                  <br />
-                  库存: {formatAmount(selectedListing.amount, selectedListing.sellTokenDecimals ?? 9)}
-                  <br />
-                  单价: {formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9)} {selectedListing.buyTokenSymbol}
-                </>
-              )}
-            </DialogDescription>
+            <DialogTitle className="text-white text-xl font-bold">购买确认</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">购买数量</label>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={purchaseAmount}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setPurchaseAmount(value);
-                    }
-                  }}
-                  className="flex-1 bg-gray-800 border-gray-700 text-white"
-                  placeholder="输入数量"
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleSelectAll}
-                  className="border-gray-700 hover:bg-gray-800"
-                >
-                  全部
-                </Button>
+          
+          {selectedListing && (
+            <div className="space-y-6">
+              {/* 代币信息卡片 */}
+              <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">代币</span>
+                  <a 
+                    href={`https://solscan.io/token/${selectedListing.sellMint}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white font-medium hover:text-purple-400 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    {selectedListing.sellTokenName || selectedListing.sellTokenSymbol}
+                    <ExternalLink className="w-3 h-3 text-gray-500" />
+                  </a>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">可购买量</span>
+                  <span className="text-white font-medium">
+                    {formatAmount(selectedListing.amount, selectedListing.sellTokenDecimals ?? 9)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">单价</span>
+                  <span className="text-white font-medium">
+                    {formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9, selectedListing.sellTokenDecimals ?? 9)} {selectedListing.buyTokenSymbol}
+                  </span>
+                </div>
               </div>
-              {selectedListing && purchaseAmount && (
-                <p className="text-xs text-gray-500 mt-2">
-                  总价: {(parseFloat(purchaseAmount) * formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9)).toFixed(6)} {selectedListing.buyTokenSymbol}
-                </p>
+
+              {/* 购买数量输入 */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">购买数量</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={purchaseAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setPurchaseAmount(value);
+                      }
+                    }}
+                    className="flex-1 bg-gray-800 border-gray-700 text-white focus:border-purple-500 transition-colors"
+                    placeholder="输入购买数量"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleSelectAll}
+                    className="border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-colors"
+                  >
+                    全部
+                  </Button>
+                </div>
+              </div>
+
+              {/* 总价显示 */}
+              {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-300 text-sm">总计支付</span>
+                    <span className="text-white text-lg font-bold">
+                      {(parseFloat(purchaseAmount) * (selectedListing.pricePerToken / Math.pow(10, selectedListing.buyTokenDecimals ?? 9))).toFixed(6)} {selectedListing.buyTokenSymbol}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-          <DialogFooter>
+          )}
+
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => {
                 setSelectedListing(null);
-                setPurchaseAmount("1");
+                // 不需要重置购买数量，下次打开会自动设置为全部
               }}
               className="border-gray-700 hover:bg-gray-800"
             >

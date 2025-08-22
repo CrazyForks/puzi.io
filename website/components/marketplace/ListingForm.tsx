@@ -2,10 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { ShoppingCart, Loader2, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ShoppingCart, Loader2, ChevronDown, Info } from "lucide-react";
 import { useCreateListing } from "./hooks/useCreateListing";
 import { PAYMENT_TOKENS, KnownToken } from "@/config/known-tokens";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { getTotalRentRefund, getTokenAccountRentCost } from "@/utils/rent";
+import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 interface TokenInfo {
   mint: string;
@@ -26,8 +31,46 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
   const [pricePerToken, setPricePerToken] = useState("");
   const [selectedPaymentToken, setSelectedPaymentToken] = useState<KnownToken>(PAYMENT_TOKENS[0]); // 默认选择USDC
   const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
+  const [rentCost, setRentCost] = useState<number | null>(null);
+  const [needsWsolAccount, setNeedsWsolAccount] = useState(false);
   
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const { createListing, loading } = useCreateListing();
+
+  useEffect(() => {
+    const calculateRentCost = async () => {
+      // 基础租金：listing账户 + escrow token账户
+      let baseRent = await getTotalRentRefund(connection);
+      
+      // 如果选择的是原生 SOL，检查是否需要创建 wSOL 账户
+      if (selectedToken?.mint === "SOL_NATIVE" && publicKey) {
+        const wsolTokenAccount = await getAssociatedTokenAddress(
+          WRAPPED_SOL_MINT,
+          publicKey,
+          false,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+        
+        const accountInfo = await connection.getAccountInfo(wsolTokenAccount);
+        if (!accountInfo) {
+          // 需要创建 wSOL 账户，额外加上 token 账户租金
+          const wsolAccountRent = await getTokenAccountRentCost(connection);
+          baseRent += wsolAccountRent;
+          setNeedsWsolAccount(true);
+        } else {
+          setNeedsWsolAccount(false);
+        }
+      } else {
+        setNeedsWsolAccount(false);
+      }
+      
+      setRentCost(baseRent);
+    };
+    
+    calculateRentCost();
+  }, [connection, selectedToken, publicKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,11 +91,22 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
       return;
     }
 
+    // 如果选择的是原生 SOL
+    const isNativeSOL = selectedToken.mint === "SOL_NATIVE";
+    let actualSellMint = selectedToken.mint;
+    
+    if (isNativeSOL) {
+      // 使用 Wrapped SOL 的 mint 地址
+      actualSellMint = WRAPPED_SOL_MINT.toString();
+    }
+
+    // 价格现在直接表示每个完整代币的价格（合约会处理小数位换算）
     const success = await createListing({
-      sellMint: selectedToken.mint,
+      sellMint: actualSellMint,
       buyMint: selectedPaymentToken.mint,
       amount: Math.floor(sellAmountNumber * Math.pow(10, selectedToken.decimals)),
       pricePerToken: Math.floor(priceNumber * Math.pow(10, selectedPaymentToken.decimals)),
+      isNativeSOL: isNativeSOL // 传递是否是原生 SOL
     });
 
     if (success) {
@@ -157,7 +211,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               <button
                 type="button"
                 onClick={() => setShowPaymentDropdown(!showPaymentDropdown)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white text-left flex items-center justify-between hover:bg-gray-700 transition-colors"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white text-left flex items-center justify-between hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   {selectedPaymentToken.logoURI && (
@@ -183,7 +237,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
                         setSelectedPaymentToken(token);
                         setShowPaymentDropdown(false);
                       }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-700 transition-colors flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left hover:bg-gray-700 transition-colors flex items-center gap-2 cursor-pointer"
                     >
                       {token.logoURI && (
                         <img 
@@ -228,6 +282,26 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               <p className="text-lg font-bold text-white">
                 {(parseFloat(sellAmount) * parseFloat(pricePerToken)).toFixed(4)} {selectedPaymentToken.symbol}
               </p>
+            </div>
+          )}
+
+          {/* 租金提示 */}
+          {rentCost && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-gray-300">创建卖单需要租金</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    需要支付约 {rentCost.toFixed(6)} SOL 的租金
+                    {needsWsolAccount ? 
+                      "（listing账户 + escrow账户 + wSOL账户）" : 
+                      "（listing账户 + escrow账户）"}。
+                    当您取消卖单或售罄后，可以全额回收这笔租金。
+                    {needsWsolAccount && " 其中 wSOL 账户的租金会在取消卖单时自动返还。"}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

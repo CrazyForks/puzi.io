@@ -1,3 +1,5 @@
+import { envConfig } from './env';
+
 export interface KnownToken {
   symbol: string;
   name: string;
@@ -7,8 +9,8 @@ export interface KnownToken {
   coingeckoId?: string;
 }
 
-// Solana主网上的常见代币
-export const KNOWN_TOKENS: KnownToken[] = [
+// Devnet tokens
+const DEVNET_TOKENS: KnownToken[] = [
   {
     symbol: "USDC-Dev",
     name: "USD Coin Dev",
@@ -27,7 +29,54 @@ export const KNOWN_TOKENS: KnownToken[] = [
   },
 ];
 
-// 获取代币信息的辅助函数
+// Mainnet tokens
+const MAINNET_TOKENS: KnownToken[] = [
+  {
+    symbol: "USDC",
+    name: "USD Coin",
+    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    decimals: 6,
+    logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
+    coingeckoId: "usd-coin"
+  },
+  {
+    symbol: "USDT",
+    name: "Tether USD",
+    mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    decimals: 6,
+    logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
+    coingeckoId: "tether"
+  },
+  {
+    symbol: "SOL",
+    name: "Wrapped SOL",
+    mint: "So11111111111111111111111111111111111111112",
+    decimals: 9,
+    logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+    coingeckoId: "solana"
+  },
+  {
+    symbol: "BONK",
+    name: "Bonk",
+    mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    decimals: 5,
+    logoURI: "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I",
+    coingeckoId: "bonk"
+  },
+  {
+    symbol: "JUP",
+    name: "Jupiter",
+    mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+    decimals: 6,
+    logoURI: "https://static.jup.ag/jup/icon.png",
+    coingeckoId: "jupiter"
+  },
+];
+
+// Get tokens based on current network
+export const KNOWN_TOKENS: KnownToken[] = envConfig.network === 'mainnet' ? MAINNET_TOKENS : DEVNET_TOKENS;
+
+// Helper functions
 export function getTokenByMint(mint: string): KnownToken | undefined {
   return KNOWN_TOKENS.find(token => token.mint === mint);
 }
@@ -36,7 +85,11 @@ export function getTokenBySymbol(symbol: string): KnownToken | undefined {
   return KNOWN_TOKENS.find(token => token.symbol === symbol);
 }
 
-// 默认支付代币（用户可以选择的支付方式）
-export const PAYMENT_TOKENS = KNOWN_TOKENS.filter(token => 
-  ["USDC-Dev", "SOL"].includes(token.symbol)
-);
+// Payment tokens based on network
+export const PAYMENT_TOKENS = KNOWN_TOKENS.filter(token => {
+  if (envConfig.network === 'mainnet') {
+    return ["USDC", "USDT", "SOL"].includes(token.symbol);
+  } else {
+    return ["USDC-Dev", "SOL"].includes(token.symbol);
+  }
+});

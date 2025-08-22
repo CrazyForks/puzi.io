@@ -6,7 +6,18 @@
       "Bash(npm run lint)",
       "Bash(npm run build:*)",
       "Bash(grep:*)",
-      "Bash(anchor test:*)"
+      "Bash(anchor test:*)",
+      "Bash(cargo build-sbf:*)",
+      "Bash(solana balance:*)",
+      "Bash(solana program show:*)",
+      "Bash(solana airdrop:*)",
+      "Bash(anchor deploy:*)",
+      "Bash(cp:*)",
+      "Bash(./build_optimized.sh:*)",
+      "Bash(npm run update-program:*)",
+      "Bash(solana program extend:*)",
+      "Bash(solana program deploy:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

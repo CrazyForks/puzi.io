@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Puzi.io - 代币交易市场",
-  description: "去中心化的代币交易平台，每个人都该开个铺子",
+  title: "puzi.io - 开个铺子",
+  description: "去中心化的交易平台",
 };
 
 export default function RootLayout({

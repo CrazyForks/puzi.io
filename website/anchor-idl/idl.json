@@ -1,5 +1,5 @@
 {
-  "address": "HBo5e3xjdjB7qtg5e87UxB6oDLCyfDdrfNWgGdPadwpQ",
+  "address": "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A",
   "metadata": {
     "name": "puzi_contracts",
     "version": "0.1.0",
@@ -9,9 +9,6 @@
   "instructions": [
     {
       "name": "cancel_listing",
-      "docs": [
-        "取消卖单（退回剩余代币）"
-      ],
       "discriminator": [
         41,
         183,
@@ -58,6 +55,9 @@
           }
         },
         {
+          "name": "sell_mint"
+        },
+        {
           "name": "seller_sell_token",
           "writable": true
         },
@@ -66,16 +66,14 @@
           "writable": true
         },
         {
-          "name": "token_program"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
     },
     {
       "name": "create_listing",
-      "docs": [
-        "创建卖单"
-      ],
       "discriminator": [
         18,
         168,
@@ -132,10 +130,97 @@
         },
         {
           "name": "escrow_sell_token",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "listing"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sell_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
-          "name": "token_program"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "associated_token_program",
@@ -163,9 +248,6 @@
     },
     {
       "name": "purchase",
-      "docs": [
-        "购买代币（支持部分成交）"
-      ],
       "discriminator": [
         21,
         93,
@@ -214,7 +296,16 @@
         },
         {
           "name": "seller",
+          "docs": [
+            "Seller account must match the one in listing"
+          ],
           "writable": true
+        },
+        {
+          "name": "sell_mint"
+        },
+        {
+          "name": "buy_mint"
         },
         {
           "name": "buyer_buy_token",
@@ -264,40 +355,52 @@
     {
       "code": 6000,
       "name": "ListingNotActive",
-      "msg": "卖单不活跃"
+      "msg": "E1"
     },
     {
       "code": 6001,
       "name": "Unauthorized",
-      "msg": "未授权操作"
+      "msg": "E2"
     },
     {
       "code": 6002,
       "name": "InvalidAmount",
-      "msg": "购买数量必须大于 0"
+      "msg": "E3"
     },
     {
       "code": 6003,
-      "name": "InsufficientStock",
-      "msg": "库存不足"
+      "name": "InvalidPrice",
+      "msg": "E4"
     },
     {
       "code": 6004,
-      "name": "InsufficientFunds",
-      "msg": "余额不足"
+      "name": "InsufficientStock",
+      "msg": "E5"
     },
     {
       "code": 6005,
       "name": "Overflow",
-      "msg": "数值溢出"
+      "msg": "E6"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMint",
+      "msg": "E7"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidOwner",
+      "msg": "E8"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidSeller",
+      "msg": "E9"
     }
   ],
   "types": [
     {
       "name": "Listing",
-      "docs": [
-        "卖单账户结构"
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -324,10 +427,6 @@
           {
             "name": "listing_id",
             "type": "u64"
-          },
-          {
-            "name": "is_active",
-            "type": "bool"
           },
           {
             "name": "bump",

@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
+    "dev": "NEXT_PUBLIC_SOLANA_NETWORK=devnet next dev --turbopack",
+    "dev:devnet": "NEXT_PUBLIC_SOLANA_NETWORK=devnet next dev --turbopack",
+    "dev:mainnet": "NEXT_PUBLIC_SOLANA_NETWORK=mainnet next dev --turbopack",
+    "build": "NEXT_PUBLIC_SOLANA_NETWORK=devnet next build",
+    "build:devnet": "NEXT_PUBLIC_SOLANA_NETWORK=devnet next build",
+    "build:mainnet": "NEXT_PUBLIC_SOLANA_NETWORK=mainnet next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "update-program": "node scripts/update-program.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

@@ -5,8 +5,11 @@ package_manager = "pnpm"
 resolution = true
 skip-lint = false
 
+[programs.devnet]
+puzi_contracts = "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A"
+
 [programs.localnet]
-puzi_contracts = "HBo5e3xjdjB7qtg5e87UxB6oDLCyfDdrfNWgGdPadwpQ"
+puzi_contracts = "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A"
 
 [registry]
 url = "https://api.apr.dev"

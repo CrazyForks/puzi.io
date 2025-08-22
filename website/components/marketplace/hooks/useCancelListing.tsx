@@ -1,16 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { PuziContracts, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { 
+  TOKEN_PROGRAM_ID, 
+  getAssociatedTokenAddressSync,
+  createCloseAccountInstruction,
+  createTransferInstruction 
+} from "@solana/spl-token";
+import { getTotalRentRefund } from "@/utils/rent";
+import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
+import { Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export function useCancelListing() {
   const { connection } = useConnection();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey } = useWallet();
+  const wallet = useAnchorWallet();
   const [loading, setLoading] = useState(false);
 
   const cancelListing = async (
@@ -18,7 +27,7 @@ export function useCancelListing() {
     sellMint: string,
     listingId: number
   ): Promise<boolean> => {
-    if (!publicKey || !signTransaction) {
+    if (!publicKey || !wallet) {
       toast.error("请先连接钱包");
       return false;
     }
@@ -27,19 +36,11 @@ export function useCancelListing() {
 
     try {
       // 创建 Anchor Provider
-      const provider = new AnchorProvider(
-        connection,
-        { 
-          publicKey,
-          signTransaction,
-          signAllTransactions: async () => {
-            throw new Error("signAllTransactions not implemented");
-          }
-        },
-        { commitment: "confirmed" }
-      );
+      const provider = new AnchorProvider(connection, wallet, {
+        commitment: "confirmed",
+      });
 
-      // 创建 Program 实例
+      // 创建 Program 实例 - IDL 已包含 program address
       const program = new Program<PuziContracts>(IDL, provider);
 
       const sellMintPubkey = new PublicKey(sellMint);
@@ -78,27 +79,20 @@ export function useCancelListing() {
         throw new Error("卖单不存在或已被取消");
       }
 
-      // 检查是否是SOL
-      const isSellingSOL = sellMint === "So11111111111111111111111111111111111111112";
-      
-      let sellerSellToken: PublicKey;
-      let escrowSellToken: PublicKey;
-      
-      if (isSellingSOL) {
-        sellerSellToken = publicKey;
-        escrowSellToken = listingPda;
-      } else {
-        sellerSellToken = getAssociatedTokenAddressSync(
-          sellMintPubkey,
-          publicKey
-        );
+      // Wrapped SOL 也是 SPL Token
+      const sellerSellToken = getAssociatedTokenAddressSync(
+        sellMintPubkey,
+        publicKey
+      );
 
-        escrowSellToken = getAssociatedTokenAddressSync(
-          sellMintPubkey,
-          listingPda,
-          true
-        );
-      }
+      const escrowSellToken = getAssociatedTokenAddressSync(
+        sellMintPubkey,
+        listingPda,
+        true
+      );
+      
+      // 检查是否是 Wrapped SOL
+      const isWrappedSOL = sellMint === WRAPPED_SOL_MINT.toString();
 
       console.log("Canceling listing:", {
         listingAddress,
@@ -110,59 +104,64 @@ export function useCancelListing() {
       });
 
       try {
-        // 构建取消卖单交易
-        console.log("Building cancel listing instruction...");
-        const instruction = await program.methods
+        // 创建交易
+        const transaction = new Transaction();
+        
+        // 设置交易基本信息
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = publicKey;
+        
+        // 添加取消 listing 的指令
+        const cancelIx = await program.methods
           .cancelListing()
           .accountsPartial({
             seller: publicKey,
             listing: listingPda,
+            sellMint: sellMintPubkey,
             sellerSellToken,
             escrowSellToken,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .instruction();
-
-        console.log("Instruction built successfully");
-
-        // 创建交易
-        console.log("Getting latest blockhash...");
-        const { blockhash } = await connection.getLatestBlockhash();
-        const transaction = new Transaction({
-          recentBlockhash: blockhash,
-          feePayer: publicKey,
+        
+        transaction.add(cancelIx);
+        
+        // 不在取消卖单时自动 unwrap wSOL，原因：
+        // 1. 无法只 unwrap 部分数量（Solana 限制）
+        // 2. 关闭整个账户会影响其他 SOL 卖单
+        // 3. 用户可能想保留 wSOL 用于其他用途
+        // 用户可以在钱包中随时手动 unwrap
+        
+        console.log("Executing cancel listing transaction...");
+        const tx = await provider.sendAndConfirm(transaction, [], {
+          skipPreflight: false,
+          commitment: 'confirmed'
         });
         
-        transaction.add(instruction);
-        console.log("Transaction created successfully");
-
-        // 签名交易
-        console.log("Signing transaction...");
-        const signedTransaction = await signTransaction(transaction);
-        console.log("Transaction signed successfully");
-
-        // 发送交易
-        console.log("Sending transaction...");
-        const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed'
-        });
-        console.log("Transaction sent, signature:", signature);
-
-        // 确认交易
-        console.log("Confirming transaction...");
-        const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-        if (confirmation.value.err) {
-          throw new Error(`Transaction failed: ${confirmation.value.err}`);
-        }
-        console.log("Transaction confirmed successfully");
-
-        const tx = signature;
-
+        console.log("Transaction executed successfully");
         console.log("Cancel listing transaction:", tx);
 
+        // 计算返还的租金
+        let rentRefund = await getTotalRentRefund(connection, true);
+        let rentNote = "(Listing + Escrow账户)";
+        
+        // 如果取消的是 Wrapped SOL 卖单且包含 unwrap 指令，加上 wSOL 账户租金
+        if (isWrappedSOL && transaction.instructions.length > 1) {
+          const tokenAccountRent = await connection.getMinimumBalanceForRentExemption(165);
+          rentRefund += tokenAccountRent / (LAMPORTS_PER_SOL || 1000000000);
+          rentNote = "(Listing + Escrow + wSOL账户)";
+        }
+
         toast.success("卖单已取消", {
-          description: `交易ID: ${tx.slice(0, 8)}...${tx.slice(-8)}`,
+          description: (
+            <div className="space-y-1">
+              <div>交易ID: {tx.slice(0, 8)}...{tx.slice(-8)}</div>
+              <div className="text-xs text-gray-400">
+                返还租金: {rentRefund.toFixed(6)} SOL {rentNote}
+              </div>
+            </div>
+          ) as any,
         });
 
         return true;

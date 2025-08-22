@@ -15,7 +15,6 @@ interface ListingInfo {
   pricePerToken: number;
   amount: number;
   listingId: number;
-  isActive: boolean;
   sellTokenName?: string;
   sellTokenSymbol?: string;
   sellTokenDescription?: string;
@@ -61,15 +60,13 @@ export function useUserListings(userAddress: string) {
       
       console.log(`找到 ${userListings.length} 个用户卖单账户`);
 
-      const activeListings: ListingInfo[] = [];
+      const allListings: ListingInfo[] = [];
 
       for (const listingAccount of userListings) {
         const listing = listingAccount.account;
         
-        // 只显示活跃的卖单
-        if (!listing.isActive || listing.amount === 0) {
-          continue;
-        }
+        // 显示所有卖单（包括已售罄的，以便卖家回收租金）
+        // 注意：这里不再过滤，让卖家能看到所有卖单
 
         // 从链上获取代币元数据
         const sellMintAddress = listing.sellMint.toBase58();
@@ -141,7 +138,7 @@ export function useUserListings(userAddress: string) {
           decimals: buyTokenDecimals
         };
 
-        activeListings.push({
+        allListings.push({
           address: listingAccount.publicKey.toBase58(),
           seller: listing.seller.toBase58(),
           sellMint: listing.sellMint.toBase58(),
@@ -149,7 +146,6 @@ export function useUserListings(userAddress: string) {
           pricePerToken: listing.pricePerToken.toNumber(),
           amount: listing.amount.toNumber(),
           listingId: listing.listingId.toNumber(),
-          isActive: listing.isActive,
           sellTokenName: sellTokenInfo.name,
           sellTokenSymbol: sellTokenInfo.symbol,
           sellTokenDescription: sellTokenInfo.description,
@@ -162,10 +158,10 @@ export function useUserListings(userAddress: string) {
       }
 
       // 按创建时间排序（最新的在前面）
-      activeListings.sort((a, b) => b.listingId - a.listingId);
+      allListings.sort((a, b) => b.listingId - a.listingId);
 
-      setListings(activeListings);
-      console.log(`找到 ${activeListings.length} 个活跃卖单`);
+      setListings(allListings);
+      console.log(`找到 ${allListings.length} 个卖单（包括已售罄）`);
 
     } catch (err: unknown) {
       console.error("获取用户卖单失败:", err);

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useActiveListings } from "./hooks/useActiveListings";
 import { usePurchase } from "./hooks/usePurchase";
-import { Loader2, ShoppingCart, RefreshCw } from "lucide-react";
+import { Loader2, ShoppingCart, RefreshCw, ExternalLink } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 import { getTokenByMint } from "@/config/known-tokens";
@@ -45,10 +45,18 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
     }
 
     const decimals = selectedListing.sellTokenDecimals ?? 9;
-    const buyAmountInSmallestUnit = Math.floor(amount * Math.pow(10, decimals));
+    
+    // 验证精度是否正确
+    const buyAmountInSmallestUnit = amount * Math.pow(10, decimals);
+    if (buyAmountInSmallestUnit % 1 !== 0) {
+      alert(`购买数量的精度不能超过 ${decimals} 位小数。\n例如：${decimals === 0 ? '只能购买整数个（如 1, 2, 3）' : decimals === 1 ? '只能精确到小数点后1位（如 1.1, 2.5）' : `只能精确到小数点后${decimals}位`}`);
+      return;
+    }
+    
+    const buyAmountInSmallestUnitInt = Math.floor(buyAmountInSmallestUnit);
     
     // 验证数量不超过库存
-    if (buyAmountInSmallestUnit > selectedListing.amount) {
+    if (buyAmountInSmallestUnitInt > selectedListing.amount) {
       alert(`购买数量不能超过库存 (${formatAmount(selectedListing.amount, decimals)})`);
       return;
     }
@@ -62,7 +70,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
         selectedListing.sellMint,
         selectedListing.buyMint,
         selectedListing.seller,
-        buyAmountInSmallestUnit,
+        buyAmountInSmallestUnitInt,
         selectedListing.pricePerToken,
         selectedListing.listingId,
         selectedListing.sellTokenDecimals,
@@ -72,7 +80,7 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
       if (success) {
         // 关闭弹窗并刷新列表
         setSelectedListing(null);
-        setPurchaseAmount("1");
+        // 不需要重置购买数量，下次打开会自动设置为全部
         refetch();
       }
     } finally {
@@ -88,8 +96,11 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
     }
   };
 
-  const formatPrice = (price: number, decimals: number = 9) => {
-    return (price / Math.pow(10, decimals)).toLocaleString(undefined, {
+  const formatPrice = (pricePerToken: number, buyDecimals: number = 9, sellDecimals: number = 9) => {
+    // pricePerToken 现在直接是每个完整代币的价格（以买币最小单位存储）
+    // 转换为UI显示：除以买币的小数位
+    const displayPrice = pricePerToken / Math.pow(10, buyDecimals);
+    return displayPrice.toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6
     });
@@ -167,7 +178,12 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
               key={listing.address}
               listing={listing}
               connected={connected}
-              onPurchaseClick={setSelectedListing}
+              onPurchaseClick={(listing) => {
+                setSelectedListing(listing);
+                // 设置购买数量为全部
+                const maxAmount = formatAmount(listing.amount, listing.sellTokenDecimals ?? 9);
+                setPurchaseAmount(maxAmount);
+              }}
               purchaseLoading={purchaseLoadingStates[listing.address]}
             />
           ))}
@@ -176,58 +192,122 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
 
         {/* Purchase Modal */}
         <Dialog open={!!selectedListing} onOpenChange={(open) => !open && setSelectedListing(null)}>
-          <DialogContent className="bg-gray-900 border-gray-800">
+          <DialogContent className="bg-gray-900 border-gray-800 max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-white">购买确认</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                {selectedListing && (
-                  <>
-                    购买 {selectedListing.sellTokenName || selectedListing.sellTokenSymbol}
-                    <br />
-                    库存: {formatAmount(selectedListing.amount, selectedListing.sellTokenDecimals ?? 9)}
-                    <br />
-                    单价: {formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9)} {selectedListing.buyTokenSymbol}
-                  </>
-                )}
-              </DialogDescription>
+              <DialogTitle className="text-white text-xl font-bold">购买确认</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">购买数量</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={purchaseAmount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                        setPurchaseAmount(value);
-                      }
-                    }}
-                    className="flex-1 bg-gray-800 border-gray-700 text-white"
-                    placeholder="输入数量"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleSelectAll}
-                    className="border-gray-700 hover:bg-gray-800"
-                  >
-                    全部
-                  </Button>
+            
+            {selectedListing && (
+              <div className="space-y-6">
+                {/* 代币信息卡片 */}
+                <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">代币</span>
+                    <a 
+                      href={`https://solscan.io/token/${selectedListing.sellMint}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white font-medium hover:text-purple-400 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      {selectedListing.sellTokenName || selectedListing.sellTokenSymbol}
+                      <ExternalLink className="w-3 h-3 text-gray-500" />
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">可购买量</span>
+                    <span className="text-white font-medium">
+                      {formatAmount(selectedListing.amount, selectedListing.sellTokenDecimals ?? 9)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">单价</span>
+                    <span className="text-white font-medium">
+                      {formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9, selectedListing.sellTokenDecimals ?? 9)} {selectedListing.buyTokenSymbol}
+                    </span>
+                  </div>
                 </div>
-                {selectedListing && purchaseAmount && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    总价: {(parseFloat(purchaseAmount) * formatPrice(selectedListing.pricePerToken, selectedListing.buyTokenDecimals ?? 9)).toFixed(6)} {selectedListing.buyTokenSymbol}
-                  </p>
-                )}
+
+                {/* 购买数量输入 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">购买数量</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={purchaseAmount}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          setPurchaseAmount(value);
+                        }
+                      }}
+                      className="flex-1 bg-gray-800 border-gray-700 text-white focus:border-purple-500 transition-colors"
+                      placeholder="输入购买数量"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={handleSelectAll}
+                      className="border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-colors"
+                    >
+                      全部
+                    </Button>
+                  </div>
+                  
+                  {/* 精度提示 */}
+                  {(() => {
+                    const decimals = selectedListing.sellTokenDecimals ?? 9;
+                    const minAmount = Math.pow(10, -decimals);
+                    const inputValue = parseFloat(purchaseAmount) || 0;
+                    const isValidPrecision = purchaseAmount === "" || 
+                      (inputValue * Math.pow(10, decimals)) % 1 === 0;
+                    
+                    return (
+                      <div className="space-y-1">
+                        {!isValidPrecision && purchaseAmount !== "" && (
+                          <p className="text-xs text-red-400">
+                            ⚠️ 输入的数量精度超过代币支持的小数位数
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          最小购买单位: {minAmount.toFixed(decimals)}
+                          {decimals === 0 && " (必须购买整数个)"}
+                          {decimals === 1 && " (精确到小数点后1位)"}
+                          {decimals > 2 && ` (精确到小数点后${decimals}位)`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 总价显示 */}
+                {purchaseAmount && parseFloat(purchaseAmount) > 0 && (() => {
+                  const inputValue = parseFloat(purchaseAmount);
+                  const decimals = selectedListing.sellTokenDecimals ?? 9;
+                  const isValidPrecision = (inputValue * Math.pow(10, decimals)) % 1 === 0;
+                  
+                  if (isValidPrecision) {
+                    const totalPrice = inputValue * (selectedListing.pricePerToken / Math.pow(10, selectedListing.buyTokenDecimals ?? 9));
+                    return (
+                      <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300 text-sm">总计支付</span>
+                          <span className="text-white text-lg font-bold">
+                            {totalPrice.toFixed(6)} {selectedListing.buyTokenSymbol}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
-            </div>
-            <DialogFooter>
+            )}
+
+            <DialogFooter className="gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
                   setSelectedListing(null);
-                  setPurchaseAmount("1");
+                  // 不需要重置购买数量，下次打开会自动设置为全部
                 }}
                 className="border-gray-700 hover:bg-gray-800"
               >
@@ -235,8 +315,18 @@ export function ActiveListings({ onRefresh }: ActiveListingsProps) {
               </Button>
               <Button
                 onClick={handlePurchase}
-                disabled={purchaseLoadingStates[selectedListing?.address]}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                disabled={(() => {
+                  if (!selectedListing || !purchaseAmount) return true;
+                  if (purchaseLoadingStates[selectedListing.address]) return true;
+                  
+                  // 检查精度是否正确
+                  const decimals = selectedListing.sellTokenDecimals ?? 9;
+                  const inputValue = parseFloat(purchaseAmount) || 0;
+                  const isValidPrecision = (inputValue * Math.pow(10, decimals)) % 1 === 0;
+                  
+                  return !isValidPrecision || inputValue <= 0;
+                })()}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {purchaseLoadingStates[selectedListing?.address] ? (
                   <>

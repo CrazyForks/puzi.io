@@ -40,7 +40,7 @@ export function useTokenAccounts() {
         const solBalance = await connection.getBalance(publicKey, 'confirmed');
         if (solBalance > 0) {
           tokenList.push({
-            mint: "So11111111111111111111111111111111111111112", // SOL的mint地址
+            mint: "SOL_NATIVE", // 使用特殊标识符表示原生 SOL
             amount: solBalance,
             name: "Solana",
             symbol: "SOL",
@@ -77,23 +77,29 @@ export function useTokenAccounts() {
 
         // 只显示余额大于0的代币
         if (amount > 0) {
-          // 先添加基本信息，后续异步获取元数据
-          tokenList.push({
-            mint: mintAddress,
-            amount,
-            name: `Token ${mintAddress.slice(0, 8)}`,
-            symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
-            decimals,
-          });
+          // 跳过 Wrapped SOL，因为我们已经显示了原生 SOL
+          if (mintAddress === "So11111111111111111111111111111111111111112") {
+            // 不添加 Wrapped SOL 到列表
+            console.log("跳过 Wrapped SOL，使用原生 SOL 代替");
+          } else {
+            // 先添加基本信息，后续异步获取元数据
+            tokenList.push({
+              mint: mintAddress,
+              amount,
+              name: `Token ${mintAddress.slice(0, 8)}`,
+              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
+              decimals,
+            });
+          }
         }
       }
 
       // 先设置基本信息
       setTokens(tokenList);
 
-      // 异步获取所有代币的链上元数据
+      // 异步获取所有代币的链上元数据（排除原生 SOL）
       const mintAddresses = tokenList
-        .filter(token => token.mint !== "So11111111111111111111111111111111111111112")
+        .filter(token => token.mint !== "SOL_NATIVE")
         .map(token => token.mint);
       
       if (mintAddresses.length > 0) {

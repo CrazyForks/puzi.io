@@ -1,548 +1,876 @@
-/**
- * Program IDL in camelCase format in order to be used in JS/TS.
- *
- * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/puzi_contracts.json`.
- */
 export type PuziContracts = {
-  address: "HBo5e3xjdjB7qtg5e87UxB6oDLCyfDdrfNWgGdPadwpQ";
-  metadata: {
-    name: "puzi_contracts";
-    version: "0.1.0";
-    spec: "0.1.0";
-    description: "Created with Anchor";
-  };
-  instructions: [
+  "address": "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A",
+  "metadata": {
+    "name": "puzi_contracts",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
     {
-      name: "cancelListing";
-      docs: ["取消卖单（退回剩余代币）"];
-      discriminator: [41, 183, 50, 232, 230, 233, 157, 70];
-      accounts: [
+      "name": "cancel_listing",
+      "discriminator": [
+        41,
+        183,
+        50,
+        232,
+        230,
+        233,
+        157,
+        70
+      ],
+      "accounts": [
         {
-          name: "seller";
-          writable: true;
-          signer: true;
+          "name": "seller",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "listing";
-          writable: true;
-          pda: {
-            seeds: [
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "const";
-                value: [108, 105, 115, 116, 105, 110, 103];
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
               },
               {
-                kind: "account";
-                path: "seller";
+                "kind": "account",
+                "path": "seller"
               },
               {
-                kind: "account";
-                path: "listing.listing_id";
-                account: "Listing";
+                "kind": "account",
+                "path": "listing.listing_id",
+                "account": "Listing"
               }
-            ];
-          };
-        },
-        {
-          name: "sellerSellToken";
-          writable: true;
-        },
-        {
-          name: "escrowSellToken";
-          writable: true;
-        },
-        {
-          name: "tokenProgram";
-        }
-      ];
-      args: [];
-    },
-    {
-      name: "createListing";
-      docs: ["创建卖单"];
-      discriminator: [18, 168, 45, 24, 191, 31, 117, 54];
-      accounts: [
-        {
-          name: "seller";
-          writable: true;
-          signer: true;
-        },
-        {
-          name: "listing";
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "const";
-                value: [108, 105, 115, 116, 105, 110, 103];
-              },
-              {
-                kind: "account";
-                path: "seller";
-              },
-              {
-                kind: "arg";
-                path: "listing_id";
-              }
-            ];
-          };
-        },
-        {
-          name: "sellMint";
-        },
-        {
-          name: "buyMint";
-        },
-        {
-          name: "sellerSellToken";
-          writable: true;
-        },
-        {
-          name: "escrowSellToken";
-          writable: true;
-        },
-        {
-          name: "tokenProgram";
-        },
-        {
-          name: "associatedTokenProgram";
-          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-        },
-        {
-          name: "systemProgram";
-          address: "11111111111111111111111111111111";
-        }
-      ];
-      args: [
-        {
-          name: "pricePerToken";
-          type: "u64";
-        },
-        {
-          name: "amount";
-          type: "u64";
-        },
-        {
-          name: "listingId";
-          type: "u64";
-        }
-      ];
-    },
-    {
-      name: "purchase";
-      docs: ["购买代币（支持部分成交）"];
-      discriminator: [21, 93, 113, 154, 193, 160, 242, 168];
-      accounts: [
-        {
-          name: "buyer";
-          writable: true;
-          signer: true;
-        },
-        {
-          name: "listing";
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "const";
-                value: [108, 105, 115, 116, 105, 110, 103];
-              },
-              {
-                kind: "account";
-                path: "listing.seller";
-                account: "Listing";
-              },
-              {
-                kind: "account";
-                path: "listing.listing_id";
-                account: "Listing";
-              }
-            ];
-          };
-        },
-        {
-          name: "seller";
-          writable: true;
-        },
-        {
-          name: "buyerBuyToken";
-          writable: true;
-        },
-        {
-          name: "sellerBuyToken";
-          writable: true;
-        },
-        {
-          name: "escrowSellToken";
-          writable: true;
-        },
-        {
-          name: "buyerSellToken";
-          writable: true;
-        },
-        {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-        }
-      ];
-      args: [
-        {
-          name: "buyAmount";
-          type: "u64";
-        }
-      ];
-    }
-  ];
-  accounts: [
-    {
-      name: "listing";
-      discriminator: [218, 32, 50, 73, 43, 134, 26, 58];
-    }
-  ];
-  errors: [
-    {
-      code: 6000;
-      name: "listingNotActive";
-      msg: "卖单不活跃";
-    },
-    {
-      code: 6001;
-      name: "unauthorized";
-      msg: "未授权操作";
-    },
-    {
-      code: 6002;
-      name: "invalidAmount";
-      msg: "购买数量必须大于 0";
-    },
-    {
-      code: 6003;
-      name: "insufficientStock";
-      msg: "库存不足";
-    },
-    {
-      code: 6004;
-      name: "insufficientFunds";
-      msg: "余额不足";
-    },
-    {
-      code: 6005;
-      name: "overflow";
-      msg: "数值溢出";
-    }
-  ];
-  types: [
-    {
-      name: "listing";
-      docs: ["卖单账户结构"];
-      type: {
-        kind: "struct";
-        fields: [
-          {
-            name: "seller";
-            type: "pubkey";
-          },
-          {
-            name: "sellMint";
-            type: "pubkey";
-          },
-          {
-            name: "buyMint";
-            type: "pubkey";
-          },
-          {
-            name: "pricePerToken";
-            type: "u64";
-          },
-          {
-            name: "amount";
-            type: "u64";
-          },
-          {
-            name: "listingId";
-            type: "u64";
-          },
-          {
-            name: "isActive";
-            type: "bool";
-          },
-          {
-            name: "bump";
-            type: "u8";
+            ]
           }
-        ];
-      };
+        },
+        {
+          "name": "sell_mint"
+        },
+        {
+          "name": "seller_sell_token",
+          "writable": true
+        },
+        {
+          "name": "escrow_sell_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_listing",
+      "discriminator": [
+        18,
+        168,
+        45,
+        24,
+        191,
+        31,
+        117,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "listing_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sell_mint"
+        },
+        {
+          "name": "buy_mint"
+        },
+        {
+          "name": "seller_sell_token",
+          "writable": true
+        },
+        {
+          "name": "escrow_sell_token",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "listing"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sell_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "price_per_token",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "listing_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "purchase",
+      "discriminator": [
+        21,
+        93,
+        113,
+        154,
+        193,
+        160,
+        242,
+        168
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "listing.seller",
+                "account": "Listing"
+              },
+              {
+                "kind": "account",
+                "path": "listing.listing_id",
+                "account": "Listing"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
+          "docs": [
+            "Seller account must match the one in listing"
+          ],
+          "writable": true
+        },
+        {
+          "name": "sell_mint"
+        },
+        {
+          "name": "buy_mint"
+        },
+        {
+          "name": "buyer_buy_token",
+          "writable": true
+        },
+        {
+          "name": "seller_buy_token",
+          "writable": true
+        },
+        {
+          "name": "escrow_sell_token",
+          "writable": true
+        },
+        {
+          "name": "buyer_sell_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "buy_amount",
+          "type": "u64"
+        }
+      ]
     }
-  ];
+  ],
+  "accounts": [
+    {
+      "name": "Listing",
+      "discriminator": [
+        218,
+        32,
+        50,
+        73,
+        43,
+        134,
+        26,
+        58
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ListingNotActive",
+      "msg": "E1"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "E2"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidAmount",
+      "msg": "E3"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidPrice",
+      "msg": "E4"
+    },
+    {
+      "code": 6004,
+      "name": "InsufficientStock",
+      "msg": "E5"
+    },
+    {
+      "code": 6005,
+      "name": "Overflow",
+      "msg": "E6"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMint",
+      "msg": "E7"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidOwner",
+      "msg": "E8"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidSeller",
+      "msg": "E9"
+    }
+  ],
+  "types": [
+    {
+      "name": "Listing",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "sell_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "buy_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "price_per_token",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "listing_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
 };
 
 export const IDL: PuziContracts = {
-  address: "HBo5e3xjdjB7qtg5e87UxB6oDLCyfDdrfNWgGdPadwpQ",
-  metadata: {
-    name: "puzi_contracts",
-    version: "0.1.0",
-    spec: "0.1.0",
-    description: "Created with Anchor"
+  "address": "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A",
+  "metadata": {
+    "name": "puzi_contracts",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
   },
-  instructions: [
+  "instructions": [
     {
-      name: "cancelListing",
-      docs: ["取消卖单（退回剩余代币）"],
-      discriminator: [41, 183, 50, 232, 230, 233, 157, 70],
-      accounts: [
+      "name": "cancel_listing",
+      "discriminator": [
+        41,
+        183,
+        50,
+        232,
+        230,
+        233,
+        157,
+        70
+      ],
+      "accounts": [
         {
-          name: "seller",
-          writable: true,
-          signer: true
+          "name": "seller",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "listing",
-          writable: true,
-          pda: {
-            seeds: [
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "const",
-                value: [108, 105, 115, 116, 105, 110, 103]
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
               },
               {
-                kind: "account",
-                path: "seller"
+                "kind": "account",
+                "path": "seller"
               },
               {
-                kind: "account",
-                path: "listing.listing_id",
-                account: "Listing"
+                "kind": "account",
+                "path": "listing.listing_id",
+                "account": "Listing"
               }
             ]
           }
         },
         {
-          name: "sellerSellToken",
-          writable: true
+          "name": "sell_mint"
         },
         {
-          name: "escrowSellToken",
-          writable: true
+          "name": "seller_sell_token",
+          "writable": true
         },
         {
-          name: "tokenProgram"
+          "name": "escrow_sell_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      args: []
+      "args": []
     },
     {
-      name: "createListing",
-      docs: ["创建卖单"],
-      discriminator: [18, 168, 45, 24, 191, 31, 117, 54],
-      accounts: [
+      "name": "create_listing",
+      "discriminator": [
+        18,
+        168,
+        45,
+        24,
+        191,
+        31,
+        117,
+        54
+      ],
+      "accounts": [
         {
-          name: "seller",
-          writable: true,
-          signer: true
+          "name": "seller",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "listing",
-          writable: true,
-          pda: {
-            seeds: [
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "const",
-                value: [108, 105, 115, 116, 105, 110, 103]
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
               },
               {
-                kind: "account",
-                path: "seller"
+                "kind": "account",
+                "path": "seller"
               },
               {
-                kind: "arg",
-                path: "listing_id"
+                "kind": "arg",
+                "path": "listing_id"
               }
             ]
           }
         },
         {
-          name: "sellMint"
+          "name": "sell_mint"
         },
         {
-          name: "buyMint"
+          "name": "buy_mint"
         },
         {
-          name: "sellerSellToken",
-          writable: true
+          "name": "seller_sell_token",
+          "writable": true
         },
         {
-          name: "escrowSellToken",
-          writable: true
+          "name": "escrow_sell_token",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "listing"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sell_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
-          name: "tokenProgram"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          name: "associatedTokenProgram",
-          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          name: "systemProgram",
-          address: "11111111111111111111111111111111"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
-      args: [
+      "args": [
         {
-          name: "pricePerToken",
-          type: "u64"
+          "name": "price_per_token",
+          "type": "u64"
         },
         {
-          name: "amount",
-          type: "u64"
+          "name": "amount",
+          "type": "u64"
         },
         {
-          name: "listingId",
-          type: "u64"
+          "name": "listing_id",
+          "type": "u64"
         }
       ]
     },
     {
-      name: "purchase",
-      docs: ["购买代币（支持部分成交）"],
-      discriminator: [21, 93, 113, 154, 193, 160, 242, 168],
-      accounts: [
+      "name": "purchase",
+      "discriminator": [
+        21,
+        93,
+        113,
+        154,
+        193,
+        160,
+        242,
+        168
+      ],
+      "accounts": [
         {
-          name: "buyer",
-          writable: true,
-          signer: true
+          "name": "buyer",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "listing",
-          writable: true,
-          pda: {
-            seeds: [
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "const",
-                value: [108, 105, 115, 116, 105, 110, 103]
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
               },
               {
-                kind: "account",
-                path: "listing.seller",
-                account: "Listing"
+                "kind": "account",
+                "path": "listing.seller",
+                "account": "Listing"
               },
               {
-                kind: "account",
-                path: "listing.listing_id",
-                account: "Listing"
+                "kind": "account",
+                "path": "listing.listing_id",
+                "account": "Listing"
               }
             ]
           }
         },
         {
-          name: "seller",
-          writable: true
+          "name": "seller",
+          "docs": [
+            "Seller account must match the one in listing"
+          ],
+          "writable": true
         },
         {
-          name: "buyerBuyToken",
-          writable: true
+          "name": "sell_mint"
         },
         {
-          name: "sellerBuyToken",
-          writable: true
+          "name": "buy_mint"
         },
         {
-          name: "escrowSellToken",
-          writable: true
+          "name": "buyer_buy_token",
+          "writable": true
         },
         {
-          name: "buyerSellToken",
-          writable: true
+          "name": "seller_buy_token",
+          "writable": true
         },
         {
-          name: "tokenProgram",
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "escrow_sell_token",
+          "writable": true
+        },
+        {
+          "name": "buyer_sell_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      args: [
+      "args": [
         {
-          name: "buyAmount",
-          type: "u64"
+          "name": "buy_amount",
+          "type": "u64"
         }
       ]
     }
   ],
-  accounts: [
+  "accounts": [
     {
-      name: "listing",
-      discriminator: [218, 32, 50, 73, 43, 134, 26, 58]
+      "name": "Listing",
+      "discriminator": [
+        218,
+        32,
+        50,
+        73,
+        43,
+        134,
+        26,
+        58
+      ]
     }
   ],
-  errors: [
+  "errors": [
     {
-      code: 6000,
-      name: "listingNotActive",
-      msg: "卖单不活跃"
+      "code": 6000,
+      "name": "ListingNotActive",
+      "msg": "E1"
     },
     {
-      code: 6001,
-      name: "unauthorized",
-      msg: "未授权操作"
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "E2"
     },
     {
-      code: 6002,
-      name: "invalidAmount",
-      msg: "购买数量必须大于 0"
+      "code": 6002,
+      "name": "InvalidAmount",
+      "msg": "E3"
     },
     {
-      code: 6003,
-      name: "insufficientStock",
-      msg: "库存不足"
+      "code": 6003,
+      "name": "InvalidPrice",
+      "msg": "E4"
     },
     {
-      code: 6004,
-      name: "insufficientFunds",
-      msg: "余额不足"
+      "code": 6004,
+      "name": "InsufficientStock",
+      "msg": "E5"
     },
     {
-      code: 6005,
-      name: "overflow",
-      msg: "数值溢出"
+      "code": 6005,
+      "name": "Overflow",
+      "msg": "E6"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMint",
+      "msg": "E7"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidOwner",
+      "msg": "E8"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidSeller",
+      "msg": "E9"
     }
   ],
-  types: [
+  "types": [
     {
-      name: "listing",
-      docs: ["卖单账户结构"],
-      type: {
-        kind: "struct",
-        fields: [
+      "name": "Listing",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: "seller",
-            type: "pubkey"
+            "name": "seller",
+            "type": "pubkey"
           },
           {
-            name: "sellMint",
-            type: "pubkey"
+            "name": "sell_mint",
+            "type": "pubkey"
           },
           {
-            name: "buyMint",
-            type: "pubkey"
+            "name": "buy_mint",
+            "type": "pubkey"
           },
           {
-            name: "pricePerToken",
-            type: "u64"
+            "name": "price_per_token",
+            "type": "u64"
           },
           {
-            name: "amount",
-            type: "u64"
+            "name": "amount",
+            "type": "u64"
           },
           {
-            name: "listingId",
-            type: "u64"
+            "name": "listing_id",
+            "type": "u64"
           },
           {
-            name: "isActive",
-            type: "bool"
-          },
-          {
-            name: "bump",
-            type: "u8"
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

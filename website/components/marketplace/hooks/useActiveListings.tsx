@@ -14,7 +14,6 @@ interface ListingInfo {
   pricePerToken: number;
   amount: number;
   listingId: number;
-  isActive: boolean;
   sellTokenName?: string;
   sellTokenSymbol?: string;
   sellTokenDescription?: string;
@@ -58,8 +57,8 @@ export function useActiveListings() {
       for (const listingAccount of allListings) {
         const listing = listingAccount.account;
         
-        // 只显示活跃的卖单
-        if (!listing.isActive || listing.amount === 0) {
+        // 只显示活跃的卖单 (amount > 0)
+        if (listing.amount === 0 || listing.amount.toNumber() === 0) {
           continue;
         }
 
@@ -156,7 +155,6 @@ export function useActiveListings() {
           pricePerToken: listing.pricePerToken.toNumber(),
           amount: listing.amount.toNumber(),
           listingId: listing.listingId.toNumber(),
-          isActive: listing.isActive,
           sellTokenName: sellTokenInfo.name,
           sellTokenSymbol: sellTokenInfo.symbol,
           sellTokenDescription: sellTokenInfo.description,

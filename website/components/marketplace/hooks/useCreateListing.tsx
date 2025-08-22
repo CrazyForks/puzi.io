@@ -1,36 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { 
-  TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID, 
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
+  getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
-  getAccount,
-  TokenAccountNotFoundError,
-  TokenInvalidAccountOwnerError
+  createSyncNativeInstruction
 } from "@solana/spl-token";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { PuziContracts, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
 import { BN } from "@coral-xyz/anchor";
+import { getTotalRentRefund } from "@/utils/rent";
+import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
 
 interface CreateListingParams {
   sellMint: string;
   buyMint: string;
   amount: number;
   pricePerToken: number;
+  isNativeSOL?: boolean; // 指示是否是原生 SOL
 }
 
 export function useCreateListing() {
   const { connection } = useConnection();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey } = useWallet();
+  const wallet = useAnchorWallet();
   const [loading, setLoading] = useState(false);
 
   const createListing = async (params: CreateListingParams): Promise<boolean> => {
-    if (!publicKey || !signTransaction) {
+    if (!publicKey || !wallet) {
       toast.error("请先连接钱包");
       return false;
     }
@@ -39,19 +42,11 @@ export function useCreateListing() {
 
     try {
       // 创建 Anchor Provider
-      const provider = new AnchorProvider(
-        connection,
-        { 
-          publicKey,
-          signTransaction,
-          signAllTransactions: async () => {
-            throw new Error("signAllTransactions not implemented");
-          }
-        },
-        { commitment: "confirmed" }
-      );
+      const provider = new AnchorProvider(connection, wallet, {
+        commitment: "confirmed",
+      });
 
-      // 创建 Program 实例
+      // 创建 Program 实例 - IDL 已包含 program address
       const program = new Program<PuziContracts>(IDL, provider);
 
       // 生成唯一的 listing ID
@@ -67,22 +62,70 @@ export function useCreateListing() {
         program.programId
       );
 
-      // 获取代币账户地址
-      const sellMintPubkey = new PublicKey(params.sellMint);
-      const buyMintPubkey = new PublicKey(params.buyMint);
+      // 创建交易
+      const transaction = new Transaction();
       
-      // 检查是否是SOL
-      const isSellingSOL = params.sellMint === "So11111111111111111111111111111111111111112";
-      
+      // 如果是原生 SOL，需要先 wrap
+      let sellMintPubkey: PublicKey;
       let sellerSellToken: PublicKey;
       let escrowSellToken: PublicKey;
       
-      if (isSellingSOL) {
-        // 对于SOL，使用系统账户
-        sellerSellToken = publicKey;
-        escrowSellToken = listingPda;
+      if (params.isNativeSOL) {
+        // 使用 Wrapped SOL mint
+        sellMintPubkey = WRAPPED_SOL_MINT;
+        
+        // 获取 wSOL token 账户
+        sellerSellToken = await getAssociatedTokenAddress(
+          WRAPPED_SOL_MINT,
+          publicKey,
+          false,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+        
+        // 检查 wSOL 账户是否存在
+        const accountInfo = await connection.getAccountInfo(sellerSellToken);
+        
+        if (!accountInfo) {
+          // 创建 wSOL 账户
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer
+              sellerSellToken, // token account
+              publicKey, // owner
+              WRAPPED_SOL_MINT, // mint
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
+        
+        // 转账 SOL 到 wSOL 账户
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: sellerSellToken,
+            lamports: params.amount, // amount 已经是 lamports
+          })
+        );
+        
+        // 同步 native 账户余额
+        transaction.add(
+          createSyncNativeInstruction(
+            sellerSellToken,
+            TOKEN_PROGRAM_ID
+          )
+        );
+        
+        escrowSellToken = getAssociatedTokenAddressSync(
+          WRAPPED_SOL_MINT,
+          listingPda,
+          true // allowOwnerOffCurve = true for PDA
+        );
       } else {
-        // 对于SPL代币，使用关联代币账户
+        // 普通 SPL token
+        sellMintPubkey = new PublicKey(params.sellMint);
+        
         sellerSellToken = getAssociatedTokenAddressSync(
           sellMintPubkey,
           publicKey
@@ -94,6 +137,8 @@ export function useCreateListing() {
           true // allowOwnerOffCurve = true for PDA
         );
       }
+      
+      const buyMintPubkey = new PublicKey(params.buyMint);
 
       console.log("Creating listing with params:", {
         sellMint: params.sellMint,
@@ -106,25 +151,8 @@ export function useCreateListing() {
         escrowSellToken: escrowSellToken.toBase58(),
       });
 
-      // 检查escrow代币账户是否存在（只对SPL代币）
-      let escrowAccountExists = isSellingSOL; // SOL不需要代币账户
-      if (!isSellingSOL) {
-        try {
-          await getAccount(connection, escrowSellToken);
-          escrowAccountExists = true;
-          console.log("Escrow account already exists");
-        } catch (error) {
-          if (error instanceof TokenAccountNotFoundError || error instanceof TokenInvalidAccountOwnerError) {
-            console.log("Escrow account does not exist, will create it");
-            escrowAccountExists = false;
-          } else {
-            throw error;
-          }
-        }
-      }
-
-      // 创建交易，如果需要的话包含创建escrow账户的指令
-      const tx = await program.methods
+      // 添加创建 listing 的指令
+      const createListingIx = await program.methods
         .createListing(
           new BN(params.pricePerToken),
           new BN(params.amount),
@@ -132,6 +160,7 @@ export function useCreateListing() {
         )
         .accountsPartial({
           seller: publicKey,
+          listing: listingPda,
           sellMint: sellMintPubkey,
           buyMint: buyMintPubkey,
           sellerSellToken,
@@ -140,25 +169,57 @@ export function useCreateListing() {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
-        .preInstructions(!escrowAccountExists ? [
-          createAssociatedTokenAccountInstruction(
-            publicKey, // payer
-            escrowSellToken, // associatedToken
-            listingPda, // owner (PDA)
-            sellMintPubkey // mint
-          )
-        ] : [])
-        .rpc();
+        .instruction();
+      
+      transaction.add(createListingIx);
+      
+      // 发送交易
+      const tx = await provider.sendAndConfirm(transaction, [], {
+        skipPreflight: false,
+        commitment: 'confirmed'
+      });
 
       console.log("Transaction signature:", tx);
 
+      // 计算实际支付的租金
+      let rentCost = await getTotalRentRefund(connection);
+      let rentNote = "";
+      
+      // 如果是原生 SOL 且创建了 wSOL 账户，加上额外租金
+      if (params.isNativeSOL) {
+        // 检查交易中是否创建了 wSOL 账户
+        const hasCreateWsolAccount = transaction.instructions.some(ix => 
+          ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)
+        );
+        
+        if (hasCreateWsolAccount) {
+          const tokenAccountRent = await connection.getMinimumBalanceForRentExemption(165);
+          rentCost += tokenAccountRent / LAMPORTS_PER_SOL;
+          rentNote = " (含 wSOL 账户)";
+        }
+      }
+
       toast.success("卖单创建成功!", {
-        description: `交易ID: ${tx.slice(0, 8)}...${tx.slice(-8)}`,
+        description: (
+          <div className="space-y-1">
+            <div>交易ID: {tx.slice(0, 8)}...{tx.slice(-8)}</div>
+            <div className="text-xs text-yellow-500">
+              支付租金: {rentCost.toFixed(6)} SOL{rentNote}
+            </div>
+          </div>
+        ) as any,
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create listing:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        logs: error?.logs,
+        error: error?.error,
+        errorCode: error?.error?.errorCode,
+        errorMessage: error?.error?.errorMessage,
+      });
       
       let errorMessage = "创建卖单失败";
       if (error instanceof Error) {
@@ -166,6 +227,15 @@ export function useCreateListing() {
           errorMessage = "余额不足";
         } else if (error.message.includes("User rejected")) {
           errorMessage = "交易被取消";
+        } else if (error.message.includes("custom program error")) {
+          // Parse custom program errors
+          const match = error.message.match(/custom program error: (0x[a-fA-F0-9]+)/);
+          if (match) {
+            const errorCode = match[1];
+            errorMessage = `程序错误: ${errorCode}`;
+          } else {
+            errorMessage = error.message;
+          }
         } else {
           errorMessage = error.message;
         }

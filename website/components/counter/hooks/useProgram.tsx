@@ -12,6 +12,7 @@ import {
 import { PuziContracts } from "@/anchor-idl/idl";
 import Idl from "@/anchor-idl/idl.json";
 import { useEffect } from "react";
+import { envConfig } from "@/config/env";
 
 interface UseProgramReturn {
   program: anchor.Program<PuziContracts>;
@@ -48,10 +49,10 @@ export function useProgram(): UseProgramReturn {
   // This is placeholder for compatibility
   const counterAddress = PublicKey.default;
 
-  // Fund connected wallet with devnet SOL
+  // Fund connected wallet with devnet SOL (only on devnet)
   useEffect(() => {
     const airdropDevnetSol = async () => {
-      if (!publicKey) return;
+      if (!publicKey || envConfig.network !== 'devnet') return;
 
       try {
         const balance = await connection.getBalance(publicKey);

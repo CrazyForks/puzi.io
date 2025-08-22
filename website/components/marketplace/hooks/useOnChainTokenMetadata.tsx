@@ -40,13 +40,13 @@ export function useOnChainTokenMetadata() {
         };
       }
 
-      // 特殊处理 USDC
+      // 特殊处理 USDC-Dev
       if (mintAddress === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
         return {
-          name: "USD Coin",
-          symbol: "USDC",
+          name: "USD Coin Dev",
+          symbol: "USDC-Dev",
           decimals: 6,
-          description: "USD Coin",
+          description: "USD Coin (Devnet)",
           image: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png"
         };
       }

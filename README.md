@@ -24,4 +24,6 @@
 ## Dev net 
 
 - usdc dev: https://spl-token-faucet.com/?token-name=USDC-Dev
-- sol: https://faucet.solana.com/
+- sol
+  - https://faucet.solana.com/
+  - solana airdrop 5 --url devnet
