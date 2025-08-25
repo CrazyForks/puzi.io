@@ -2,10 +2,10 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Mint, Transfer};
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A");
+declare_id!("4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk");
 
 #[program]
-pub mod puzi_contracts {
+pub mod puzi {
     use super::*;
 
     pub fn create_listing(
@@ -307,22 +307,22 @@ pub struct CancelListing<'info> {
 
 #[error_code]
 pub enum ErrorCode {
-    #[msg("E1")]  // Listing not active
+    #[msg("1")]
     ListingNotActive,
-    #[msg("E2")]  // Unauthorized
+    #[msg("2")]
     Unauthorized,
-    #[msg("E3")]  // Invalid amount
+    #[msg("3")]
     InvalidAmount,
-    #[msg("E4")]  // Invalid price  
+    #[msg("4")]
     InvalidPrice,
-    #[msg("E5")]  // Insufficient stock
+    #[msg("5")]
     InsufficientStock,
-    #[msg("E6")]  // Overflow
+    #[msg("6")]
     Overflow,
-    #[msg("E7")]  // Invalid mint
+    #[msg("7")]
     InvalidMint,
-    #[msg("E8")]  // Invalid owner
+    #[msg("8")]
     InvalidOwner,
-    #[msg("E9")]  // Invalid seller
+    #[msg("9")]
     InvalidSeller,
 }

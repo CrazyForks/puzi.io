@@ -1,7 +1,7 @@
-export type PuziContracts = {
-  "address": "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A",
+export type Puzi = {
+  "address": "4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk",
   "metadata": {
-    "name": "puzi_contracts",
+    "name": "puzi",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
@@ -355,47 +355,47 @@ export type PuziContracts = {
     {
       "code": 6000,
       "name": "ListingNotActive",
-      "msg": "E1"
+      "msg": "1"
     },
     {
       "code": 6001,
       "name": "Unauthorized",
-      "msg": "E2"
+      "msg": "2"
     },
     {
       "code": 6002,
       "name": "InvalidAmount",
-      "msg": "E3"
+      "msg": "3"
     },
     {
       "code": 6003,
       "name": "InvalidPrice",
-      "msg": "E4"
+      "msg": "4"
     },
     {
       "code": 6004,
       "name": "InsufficientStock",
-      "msg": "E5"
+      "msg": "5"
     },
     {
       "code": 6005,
       "name": "Overflow",
-      "msg": "E6"
+      "msg": "6"
     },
     {
       "code": 6006,
       "name": "InvalidMint",
-      "msg": "E7"
+      "msg": "7"
     },
     {
       "code": 6007,
       "name": "InvalidOwner",
-      "msg": "E8"
+      "msg": "8"
     },
     {
       "code": 6008,
       "name": "InvalidSeller",
-      "msg": "E9"
+      "msg": "9"
     }
   ],
   "types": [
@@ -438,10 +438,10 @@ export type PuziContracts = {
   ]
 };
 
-export const IDL: PuziContracts = {
-  "address": "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A",
+export const IDL: Puzi = {
+  "address": "4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk",
   "metadata": {
-    "name": "puzi_contracts",
+    "name": "puzi",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
@@ -795,47 +795,47 @@ export const IDL: PuziContracts = {
     {
       "code": 6000,
       "name": "ListingNotActive",
-      "msg": "E1"
+      "msg": "1"
     },
     {
       "code": 6001,
       "name": "Unauthorized",
-      "msg": "E2"
+      "msg": "2"
     },
     {
       "code": 6002,
       "name": "InvalidAmount",
-      "msg": "E3"
+      "msg": "3"
     },
     {
       "code": 6003,
       "name": "InvalidPrice",
-      "msg": "E4"
+      "msg": "4"
     },
     {
       "code": 6004,
       "name": "InsufficientStock",
-      "msg": "E5"
+      "msg": "5"
     },
     {
       "code": 6005,
       "name": "Overflow",
-      "msg": "E6"
+      "msg": "6"
     },
     {
       "code": 6006,
       "name": "InvalidMint",
-      "msg": "E7"
+      "msg": "7"
     },
     {
       "code": 6007,
       "name": "InvalidOwner",
-      "msg": "E8"
+      "msg": "8"
     },
     {
       "code": 6008,
       "name": "InvalidSeller",
-      "msg": "E9"
+      "msg": "9"
     }
   ],
   "types": [

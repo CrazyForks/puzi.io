@@ -17,7 +17,18 @@
       "Bash(npm run update-program:*)",
       "Bash(solana program extend:*)",
       "Bash(solana program deploy:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(anchor build:*)",
+      "Bash(cargo clean:*)",
+      "Bash(chmod:*)",
+      "Bash(./build_ultra_optimized.sh:*)",
+      "Bash(./build_minimal.sh:*)",
+      "Bash(solana-verify:*)",
+      "Bash(./build_idl.sh:*)",
+      "Bash(solana address:*)",
+      "Bash(anchor idl fetch:*)"
     ],
     "deny": []
   }

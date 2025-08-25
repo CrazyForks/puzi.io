@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "programs/*"
+]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"       # Optimize for size
+codegen-units = 1    # Single codegen unit for better optimization
+strip = true         # Strip debug symbols
+panic = "abort"      # Smaller panic handler
+overflow-checks = false  # Disable overflow checks in release
+debug = false        # No debug info
+
+[profile.release.build-override]
+opt-level = "z"
+incremental = false
+codegen-units = 1

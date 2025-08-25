@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
-import { PuziContracts, IDL } from "@/anchor-idl/idl";
+import { Puzi, IDL } from "@/anchor-idl/idl";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 
 interface ListingInfo {
@@ -43,7 +43,7 @@ export function useActiveListings() {
 
     try {
       // 创建只读Program实例
-      const program = new Program<PuziContracts>(IDL, { connection });
+      const program = new Program<Puzi>(IDL, { connection });
 
       console.log("获取所有卖单...");
 

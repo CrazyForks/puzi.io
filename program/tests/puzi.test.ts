@@ -14,7 +14,7 @@ import { BN } from "@coral-xyz/anchor";
 describe("spl_marketplace test", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-  const program = anchor.workspace.PuziContracts;
+  const program = anchor.workspace.Puzi;
 
   let sellMint; // 卖的代币
   let buyMint; // 付款用的代币
@@ -575,7 +575,7 @@ it("购买所有代币后可以取消卖单回收租金", async () => {
 describe("不同精度代币交易测试", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-  const program = anchor.workspace.PuziContracts;
+  const program = anchor.workspace.Puzi;
   
   let seller: Keypair;
   let buyer: Keypair;

@@ -1,15 +1,48 @@
 Ref: https://www.anchor-lang.com/docs/installation
 
-# Puzi Contracts
+# Puzi Program
+
+## 🚀 优化部署 - 节省 SOL
+
+**已优化：从 2 SOL 降至 1.82 SOL (节省 ~10%)**
+
+### 快速部署
+
+```bash
+# 一键部署流程（优化版本）
+./deploy.sh
+
+# 或分步执行：
+./build_ultra_optimized.sh  # 构建优化版本 (193KB)
+./build_idl.sh              # 单独构建 IDL 给前端
+solana program deploy target/deploy/puzi.so
+```
+
+### 构建脚本说明
+
+| 脚本 | 用途 | 大小 | 部署成本 |
+|-----|------|------|---------|
+| `build_ultra_optimized.sh` | 生产部署版本 | 193KB | ~1.82 SOL |
+| `build_minimal.sh` | 激进优化测试 | 193KB | ~1.82 SOL |
+| `build_idl.sh` | 单独构建IDL | - | - |
+| `deploy.sh` | 完整部署流程 | - | - |
+
+### 优化详情
+
+- ✅ 移除 IDL（单独构建）
+- ✅ 精简错误消息
+- ✅ 优化编译参数
+- ✅ 减小栈大小
+- ✅ 符号剥离
 
 ## Init steps
 
 ```bash
 # init project
-anchor init puzi_contracts
+anchor init puzi
 
 # add dependencies
-cd puzi_contracts
+cd program
 cargo add anchor-spl
 
 
@@ -46,7 +79,7 @@ solana-test-validator --reset --rpc-port 8899 --websocket-port 8900
 ### 部署失败，使用 buffer 部署
 ```bash
 # 步骤 1: 创建 buffer 并写入程序
-solana program write-buffer target/deploy/puzi_contracts.so \
+solana program write-buffer target/deploy/puzi.so \
   --url https://api.devnet.solana.com \
   --keypair ~/.config/solana/id.json
 
@@ -55,13 +88,13 @@ solana program write-buffer target/deploy/puzi_contracts.so \
 # 步骤 2: 获取你的程序 ID
 anchor keys list
 # 或者
-solana address -k target/deploy/puzi_contracts-keypair.json
+solana address -k target/deploy/puzi-keypair.json
 
 # 步骤 3: 使用 buffer 部署到程序地址
 solana program deploy \
   --url https://api.devnet.solana.com \
   --keypair ~/.config/solana/id.json \
-  --program-id target/deploy/puzi_contracts-keypair.json \
+  --program-id target/deploy/puzi-keypair.json \
   --buffer <上面获得的Buffer地址>
 
 # 部署成功后，手动关闭 buffer 回收 SOL

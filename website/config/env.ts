@@ -9,7 +9,7 @@ export interface EnvConfig {
 const devnetConfig: EnvConfig = {
   network: 'devnet',
   rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=7b04005d-ff69-4612-98a3-0eba92102d80',
-  programId: '3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A',
+  programId: '4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk',
 };
 
 const mainnetConfig: EnvConfig = {

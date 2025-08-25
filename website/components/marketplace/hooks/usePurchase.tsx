@@ -13,7 +13,7 @@ import {
   createSyncNativeInstruction,
   createCloseAccountInstruction
 } from "@solana/spl-token";
-import { PuziContracts, IDL } from "@/anchor-idl/idl";
+import { Puzi, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
 import { 
   WRAPPED_SOL_MINT, 
@@ -67,7 +67,7 @@ export function usePurchase() {
       });
       
       // 创建 Program 实例 - IDL 已包含 program address
-      const program = new Program<PuziContracts>(IDL, provider);
+      const program = new Program<Puzi>(IDL, provider);
 
       const sellMintPubkey = new PublicKey(sellMint);
       const buyMintPubkey = new PublicKey(buyMint);

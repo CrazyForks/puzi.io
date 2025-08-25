@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-puzi_contracts = "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A"
+puzi = "4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk"
 
 [programs.localnet]
-puzi_contracts = "3Ehs9eoZmV3vYKApXs9mJkFTRev3u8B7hMeaa1nWxX6A"
+puzi = "G6duadxcdR3RYyvCYBmWJR3nQundYvRaN2918LgMbb6H"
 
 [registry]
 url = "https://api.apr.dev"

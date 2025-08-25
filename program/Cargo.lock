@@ -1053,7 +1053,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "puzi_contracts"
+name = "puzi"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

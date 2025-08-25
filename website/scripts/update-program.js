@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Paths
-const ANCHOR_TOML_PATH = path.join(__dirname, '../../puzi_contracts/Anchor.toml');
-const IDL_SOURCE_PATH = path.join(__dirname, '../../puzi_contracts/target/idl/puzi_contracts.json');
+const ANCHOR_TOML_PATH = path.join(__dirname, '../../program/Anchor.toml');
+const IDL_SOURCE_PATH = path.join(__dirname, '../../program/target/idl/puzi.json');
 const IDL_DEST_PATH = path.join(__dirname, '../anchor-idl/idl.json');
 const IDL_TS_PATH = path.join(__dirname, '../anchor-idl/idl.ts');
 const ENV_CONFIG_PATH = path.join(__dirname, '../config/env.ts');
@@ -26,7 +26,7 @@ function log(message, color = 'reset') {
 function extractProgramId() {
   try {
     const tomlContent = fs.readFileSync(ANCHOR_TOML_PATH, 'utf8');
-    const match = tomlContent.match(/\[programs\.devnet\]\s*puzi_contracts\s*=\s*"([^"]+)"/);
+    const match = tomlContent.match(/\[programs\.devnet\]\s*puzi\s*=\s*"([^"]+)"/);
     if (match && match[1]) {
       return match[1];
     }
@@ -52,9 +52,9 @@ function updateIDL() {
 
     // Generate TypeScript IDL
     const idl = JSON.parse(idlContent);
-    const tsContent = `export type PuziContracts = ${JSON.stringify(idl, null, 2)};
+    const tsContent = `export type Puzi = ${JSON.stringify(idl, null, 2)};
 
-export const IDL: PuziContracts = ${JSON.stringify(idl, null, 2)};
+export const IDL: Puzi = ${JSON.stringify(idl, null, 2)};
 `;
     fs.writeFileSync(IDL_TS_PATH, tsContent);
     log('✓ TypeScript IDL generated at anchor-idl/idl.ts', 'green');

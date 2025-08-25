@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
-import { PuziContracts, IDL } from "@/anchor-idl/idl";
+import { Puzi, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
 import { 
   TOKEN_PROGRAM_ID, 
@@ -41,7 +41,7 @@ export function useCancelListing() {
       });
 
       // 创建 Program 实例 - IDL 已包含 program address
-      const program = new Program<PuziContracts>(IDL, provider);
+      const program = new Program<Puzi>(IDL, provider);
 
       const sellMintPubkey = new PublicKey(sellMint);
       

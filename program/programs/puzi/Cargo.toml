@@ -1,15 +1,15 @@
 [package]
-name = "puzi_contracts"
+name = "puzi"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "puzi_contracts"
+name = "puzi"
 
 [features]
-default = ["no-log-ix-name"]  # Disable instruction name logging by default
+default = ["no-log-ix-name", "no-idl"]  # Disable instruction name logging and IDL by default
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []

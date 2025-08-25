@@ -12,7 +12,7 @@ import {
   createSyncNativeInstruction
 } from "@solana/spl-token";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
-import { PuziContracts, IDL } from "@/anchor-idl/idl";
+import { Puzi, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
 import { BN } from "@coral-xyz/anchor";
 import { getTotalRentRefund } from "@/utils/rent";
@@ -47,7 +47,7 @@ export function useCreateListing() {
       });
 
       // 创建 Program 实例 - IDL 已包含 program address
-      const program = new Program<PuziContracts>(IDL, provider);
+      const program = new Program<Puzi>(IDL, provider);
 
       // 生成唯一的 listing ID
       const listingId = new BN(Date.now());

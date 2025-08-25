@@ -9,13 +9,13 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 
-import { PuziContracts } from "@/anchor-idl/idl";
+import { Puzi } from "@/anchor-idl/idl";
 import Idl from "@/anchor-idl/idl.json";
 import { useEffect } from "react";
 import { envConfig } from "@/config/env";
 
 interface UseProgramReturn {
-  program: anchor.Program<PuziContracts>;
+  program: anchor.Program<Puzi>;
   counterAddress: PublicKey;
   publicKey: PublicKey | null;
   connected: boolean;
@@ -39,10 +39,10 @@ export function useProgram(): UseProgramReturn {
     const provider = new anchor.AnchorProvider(connection, wallet, {
       preflightCommitment: "confirmed",
     });
-    program = new anchor.Program<PuziContracts>(Idl, provider);
+    program = new anchor.Program<Puzi>(Idl, provider);
   } else {
     // Create program with just connection for read-only operations
-    program = new anchor.Program<PuziContracts>(Idl, { connection });
+    program = new anchor.Program<Puzi>(Idl, { connection });
   }
 
   // For marketplace, we don't need a counter address

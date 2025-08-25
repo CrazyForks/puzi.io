@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { PuziContracts, IDL } from "@/anchor-idl/idl";
+import { Puzi, IDL } from "@/anchor-idl/idl";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 
 interface ListingInfo {
@@ -43,7 +43,7 @@ export function useUserListings(userAddress: string) {
 
     try {
       // 创建只读Program实例
-      const program = new Program<PuziContracts>(IDL, { connection });
+      const program = new Program<Puzi>(IDL, { connection });
 
       console.log(`获取用户 ${userAddress} 的卖单...`);
 
