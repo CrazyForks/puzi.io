@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { WalletButton } from "@/components/counter/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { RPCSettings } from "./RPCSettings-Simple";
 
 export function Header() {
   const { publicKey, connected } = useWallet();
@@ -29,6 +30,7 @@ export function Header() {
                 我的铺子
               </Link>
             )}
+            <RPCSettings />
             <WalletButton />
           </div>
         </div>

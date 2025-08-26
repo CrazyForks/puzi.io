@@ -9,7 +9,7 @@ skip-lint = false
 puzi = "4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk"
 
 [programs.localnet]
-puzi = "G6duadxcdR3RYyvCYBmWJR3nQundYvRaN2918LgMbb6H"
+puzi = "4DqAA2N7V8Bun7zhQssuhGuZNxncLBGK5bV3gWiV2TQk"
 
 [registry]
 url = "https://api.apr.dev"

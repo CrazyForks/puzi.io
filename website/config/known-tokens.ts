@@ -1,4 +1,5 @@
-import { envConfig } from './env';
+import { rpcProvider } from '@/utils/rpc-provider';
+import { USDC_MAINNET, USDC_DEVNET } from '@/utils/usdc-address';
 
 export interface KnownToken {
   symbol: string;
@@ -14,7 +15,7 @@ const DEVNET_TOKENS: KnownToken[] = [
   {
     symbol: "USDC-Dev",
     name: "USD Coin Dev",
-    mint: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
+    mint: USDC_DEVNET,
     decimals: 6,
     logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
     coingeckoId: "usd-coin"
@@ -34,7 +35,7 @@ const MAINNET_TOKENS: KnownToken[] = [
   {
     symbol: "USDC",
     name: "USD Coin",
-    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    mint: USDC_MAINNET,
     decimals: 6,
     logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
     coingeckoId: "usd-coin"
@@ -74,7 +75,12 @@ const MAINNET_TOKENS: KnownToken[] = [
 ];
 
 // Get tokens based on current network
-export const KNOWN_TOKENS: KnownToken[] = envConfig.network === 'mainnet' ? MAINNET_TOKENS : DEVNET_TOKENS;
+export function getKnownTokens(): KnownToken[] {
+  const network = rpcProvider.getNetwork();
+  return network === 'mainnet' ? MAINNET_TOKENS : DEVNET_TOKENS;
+}
+
+export const KNOWN_TOKENS: KnownToken[] = getKnownTokens();
 
 // Helper functions
 export function getTokenByMint(mint: string): KnownToken | undefined {
@@ -86,10 +92,16 @@ export function getTokenBySymbol(symbol: string): KnownToken | undefined {
 }
 
 // Payment tokens based on network
-export const PAYMENT_TOKENS = KNOWN_TOKENS.filter(token => {
-  if (envConfig.network === 'mainnet') {
-    return ["USDC", "USDT", "SOL"].includes(token.symbol);
-  } else {
-    return ["USDC-Dev", "SOL"].includes(token.symbol);
-  }
-});
+export function getPaymentTokens(): KnownToken[] {
+  const tokens = getKnownTokens();
+  const network = rpcProvider.getNetwork();
+  return tokens.filter(token => {
+    if (network === 'mainnet') {
+      return ["USDC", "USDT", "SOL"].includes(token.symbol);
+    } else {
+      return ["USDC-Dev", "SOL"].includes(token.symbol);
+    }
+  });
+}
+
+export const PAYMENT_TOKENS = getPaymentTokens();

@@ -22,6 +22,7 @@ import {
   hasEnoughSolToWrap,
   getWrappedSolBalance
 } from "@/utils/sol-wrapper";
+import { USDC_MAINNET, USDC_DEVNET, getUSDCSymbol } from "@/utils/usdc-address";
 
 export function usePurchase() {
   const { connection } = useConnection();
@@ -57,8 +58,8 @@ export function usePurchase() {
     let buyTokenName = "支付代币";
     if (buyMint === "So11111111111111111111111111111111111111112") {
       buyTokenName = "Wrapped SOL";
-    } else if (buyMint === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
-      buyTokenName = "USDC-Dev";
+    } else if (buyMint === USDC_DEVNET || buyMint === USDC_MAINNET) {
+      buyTokenName = getUSDCSymbol();
     }
 
     try {
@@ -120,11 +121,6 @@ export function usePurchase() {
 
       // 创建交易
       const transaction = new Transaction();
-      
-      // 设置交易基本信息
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
 
       // 检查所有必需的token账户
       console.log("检查token账户...");
@@ -154,27 +150,121 @@ export function usePurchase() {
         neededAmountUI
       });
       
-      // 检查买家的 buy token 账户
-      if (!buyerBuyAccountInfo) {
-        console.log("买家buy token账户不存在", buyMint);
-        toast.error(`您没有 ${buyTokenName} 账户，请先获取 ${buyTokenName} 代币`);
-        return false;
-      } else {
-        console.log("买家buy token账户已存在");
-        // 检查余额
-        try {
-          const balance = await connection.getTokenAccountBalance(buyerBuyTokenAccount);
-          console.log("买家buy token余额:", balance.value.uiAmount, buyMint);
-          console.log("需要支付的金额:", neededAmountUI);
+      // 特殊处理 SOL 购买场景
+      if (buyMint === WRAPPED_SOL_MINT.toString() || buyMint === "So11111111111111111111111111111111111111112") {
+        console.log("使用 SOL 购买，检查是否需要 wrap");
+        
+        // 检查 SOL 余额
+        const solBalance = await connection.getBalance(publicKey);
+        const solBalanceInSol = solBalance / LAMPORTS_PER_SOL;
+        
+        // 预留 0.01 SOL 作为交易费
+        const reserveForFees = 0.01;
+        const availableSol = Math.max(0, solBalanceInSol - reserveForFees);
+        
+        if (availableSol < neededAmountUI) {
+          toast.error(`SOL 余额不足！可用余额: ${availableSol.toFixed(4)} SOL, 需要: ${neededAmountUI.toFixed(4)} SOL`);
+          return false;
+        }
+        
+        // 检查是否已有 wSOL 账户
+        if (!buyerBuyAccountInfo) {
+          console.log("创建 wSOL 账户并 wrap SOL");
           
-          if (balance.value.uiAmount === null || balance.value.uiAmount < neededAmountUI) {
-            toast.error(`${buyTokenName} 余额不足！当前余额: ${balance.value.uiAmount || 0}, 需要: ${neededAmountUI}`);
+          // 创建 wSOL 账户并 wrap SOL
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey,
+              buyerBuyTokenAccount,
+              publicKey,
+              new PublicKey(WRAPPED_SOL_MINT),
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+          
+          // 转账 SOL 到 wSOL 账户
+          // 需要精确的金额，不要多 wrap
+          const wrapAmount = totalPriceInSmallestUnit;
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: buyerBuyTokenAccount,
+              lamports: wrapAmount,
+            })
+          );
+          
+          // Sync native 指令，将 SOL 转换为 wSOL
+          transaction.add(
+            createSyncNativeInstruction(buyerBuyTokenAccount, TOKEN_PROGRAM_ID)
+          );
+          
+          console.log(`将 wrap ${wrapAmount / LAMPORTS_PER_SOL} SOL`);
+        } else {
+          // 已有 wSOL 账户，检查余额是否足够
+          try {
+            const wsolBalance = await connection.getTokenAccountBalance(buyerBuyTokenAccount);
+            const currentWsolBalance = wsolBalance.value.uiAmount || 0;
+            
+            if (currentWsolBalance < neededAmountUI) {
+              // 需要补充 wSOL
+              const additionalAmount = Math.ceil((neededAmountUI - currentWsolBalance) * LAMPORTS_PER_SOL);
+              
+              console.log(`当前 wSOL 余额: ${currentWsolBalance}, 需要额外 wrap: ${additionalAmount / LAMPORTS_PER_SOL} SOL`);
+              
+              // 转账额外的 SOL 到 wSOL 账户
+              transaction.add(
+                SystemProgram.transfer({
+                  fromPubkey: publicKey,
+                  toPubkey: buyerBuyTokenAccount,
+                  lamports: additionalAmount,
+                })
+              );
+              
+              // Sync native 指令
+              transaction.add(
+                createSyncNativeInstruction(buyerBuyTokenAccount, TOKEN_PROGRAM_ID)
+              );
+            }
+          } catch (e) {
+            console.error("获取 wSOL 余额失败:", e);
+            // 如果获取失败，尝试 wrap 需要的金额
+            const wrapAmount = totalPriceInSmallestUnit;
+            transaction.add(
+              SystemProgram.transfer({
+                fromPubkey: publicKey,
+                toPubkey: buyerBuyTokenAccount,
+                lamports: wrapAmount,
+              })
+            );
+            transaction.add(
+              createSyncNativeInstruction(buyerBuyTokenAccount, TOKEN_PROGRAM_ID)
+            );
+          }
+        }
+      } else {
+        // 非 SOL 代币的原有逻辑
+        if (!buyerBuyAccountInfo) {
+          console.log("买家buy token账户不存在", buyMint);
+          toast.error(`您没有 ${buyTokenName} 账户，请先获取 ${buyTokenName} 代币`);
+          return false;
+        } else {
+          console.log("买家buy token账户已存在");
+          // 检查余额
+          try {
+            const balance = await connection.getTokenAccountBalance(buyerBuyTokenAccount);
+            console.log("买家buy token余额:", balance.value.uiAmount, buyMint);
+            console.log("需要支付的金额:", neededAmountUI);
+            
+            if (balance.value.uiAmount === null || balance.value.uiAmount < neededAmountUI) {
+              toast.error(`${buyTokenName} 余额不足！当前余额: ${balance.value.uiAmount || 0}, 需要: ${neededAmountUI}`);
+              return false;
+            }
+          } catch (e) {
+            console.error("获取余额失败:", e);
+            toast.error("无法获取您的代币余额，请稍后重试");
             return false;
           }
-        } catch (e) {
-          console.error("获取余额失败:", e);
-          toast.error("无法获取您的代币余额，请稍后重试");
-          return false;
         }
       }
 
@@ -276,12 +366,37 @@ export function usePurchase() {
       // 因为用户可能还有其他 SOL 卖单需要这个账户
       
       console.log("交易指令数:", transaction.instructions.length);
+      
+      // 打印每个指令的详情
+      transaction.instructions.forEach((ix, index) => {
+        console.log(`指令 ${index}:`, {
+          programId: ix.programId.toBase58(),
+          keys: ix.keys.map(k => ({
+            pubkey: k.pubkey.toBase58().slice(0, 8) + '...',
+            isSigner: k.isSigner,
+            isWritable: k.isWritable
+          })),
+          dataLength: ix.data.length
+        });
+      });
+      
+      // 设置交易的 blockhash 和 feePayer
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
 
       // 发送交易
       console.log("发送交易...");
+      console.log("交易详情:", {
+        feePayer: publicKey.toBase58(),
+        instructions: transaction.instructions.length,
+        blockhash: blockhash.slice(0, 8) + '...'
+      });
+      
       const signature = await provider.sendAndConfirm(transaction, [], {
         skipPreflight: false,
-        commitment: 'confirmed'
+        commitment: 'confirmed',
+        maxRetries: 3
       });
       
       console.log("购买成功，交易签名:", signature);

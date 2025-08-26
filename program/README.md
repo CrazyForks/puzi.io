@@ -67,7 +67,7 @@ anchor deploy # anchor deploy --provider.cluster localnet
 # deploy to devnet
 anchor deploy --provider.cluster devnet
 # deploy to mainnet
-anchor deploy --provider.cluster mainnet-beta
+anchor deploy --provider.cluster mainnet
 # deploy to testnet
 anchor deploy --provider.cluster testnet
 # run local validator
@@ -116,3 +116,14 @@ solana program show <BUFFER_ADDRESS>
     - 建议如果准备部署的合约，不要使用 playground。浅唱了解概念可以用 playground
 - 开发体验
     - declare_id 还有手动运行命令，没有自动化
+- 部署到mainnet 不给小费有点难，还好通过 buffer 上传可以断点重连
+  ```
+   solana program write-buffer target/deploy/puzi.so \
+    --url https://mainnet.helius-rpc.com/\?api-key\=7b04005d-ff69-4612-98a3-0eba92102d80 \        
+    --keypair ~/.config/solana/id.json
+  Blockhash expired. 4 retries remaining
+  Blockhash expired. 3 retries remaining
+  Blockhash expired. 2 retries remaining
+  Blockhash expired. 1 retries remaining
+  Blockhash expired. 0 retries remaining
+  ```

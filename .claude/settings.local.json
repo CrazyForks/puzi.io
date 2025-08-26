@@ -28,7 +28,11 @@
       "Bash(solana-verify:*)",
       "Bash(./build_idl.sh:*)",
       "Bash(solana address:*)",
-      "Bash(anchor idl fetch:*)"
+      "Bash(anchor idl fetch:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pnpm add:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
