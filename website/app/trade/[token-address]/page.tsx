@@ -4,11 +4,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useTokenListings } from "@/components/marketplace/hooks/useTokenListings";
 import { useOnChainTokenMetadata } from "@/components/marketplace/hooks/useOnChainTokenMetadata";
 import { usePurchase } from "@/components/marketplace/hooks/usePurchase";
 import { getTradableTokenBySymbol, isKnownTokenSymbol } from "@/config/tradable-tokens";
-import { Loader2, RefreshCw, ExternalLink, Coins, ArrowLeftRight, Plus } from "lucide-react";
+import { Loader2, RefreshCw, ExternalLink, Coins, ArrowLeftRight, Plus, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PurchaseModal } from "@/components/marketplace/PurchaseModal";
@@ -25,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useCreateListing } from "@/components/marketplace/hooks/useCreateListing";
 import { useTokenBalance } from "@/components/marketplace/hooks/useTokenBalance";
 import { getUSDCAddress, getUSDCSymbol, USDC_DECIMALS } from "@/utils/usdc-address";
+import { getTotalRentCost } from "@/utils/rent";
 
 interface OrderBookEntry {
   price: number;
@@ -59,6 +61,7 @@ export default function TokenTradePage() {
   }, [rawParam]);
   
   const { publicKey, connected } = useWallet();
+  const { connection } = useConnection();
   const { setVisible } = useWalletModal();
   const { sellListings, buyListings, loading, refetch } = useTokenListings(tokenAddress);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
@@ -73,6 +76,7 @@ export default function TokenTradePage() {
   const [listingAmount, setListingAmount] = useState('');
   const [listingPrice, setListingPrice] = useState('');
   const [createListingLoading, setCreateListingLoading] = useState(false);
+  const [rentCost, setRentCost] = useState<number | null>(null);
   const { createListing } = useCreateListing();
   
   // Fetch balances for the token and USDC
@@ -119,6 +123,13 @@ export default function TokenTradePage() {
     };
     loadTokenInfo();
   }, [tokenAddress, rawParam, fetchTokenMetadata]);
+
+  // Fetch rent cost when modal opens
+  useEffect(() => {
+    if (showListingModal) {
+      getTotalRentCost(connection, true).then(setRentCost);
+    }
+  }, [showListingModal, connection]);
 
   // Process sell orders and buy orders
   const { sellOrders, buyOrders } = useMemo(() => {
@@ -676,6 +687,24 @@ export default function TokenTradePage() {
                       <span className="text-white text-lg font-bold">
                         {(parseFloat(listingAmount) * parseFloat(listingPrice)).toFixed(6)} {listingType === 'sell-token' ? 'USDC' : tokenInfo?.symbol || 'Token'}
                       </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rent cost info */}
+                {rentCost && (
+                  <div className="flex items-start gap-2 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+                    <Info className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-yellow-500 text-sm font-medium">
+                        创建卖单需要租金
+                      </p>
+                      <p className="text-yellow-600 text-xs">
+                        需要支付约 {rentCost.toFixed(6)} SOL 的租金（listing账户 + escrow账户）。
+                      </p>
+                      <p className="text-yellow-600 text-xs">
+                        当您取消卖单或售罄后，可以全额回收这笔租金。
+                      </p>
                     </div>
                   </div>
                 )}
