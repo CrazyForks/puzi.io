@@ -103,10 +103,17 @@ export function ListingCard({
             href={`https://solscan.io/token/${listing.sellMint}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 text-white font-semibold text-lg hover:text-purple-400 transition-colors group cursor-pointer"
+            className="flex items-center justify-center gap-1 hover:text-purple-400 transition-colors group cursor-pointer"
           >
-            {listing.sellTokenName || listing.sellTokenSymbol}
-            <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-purple-400" />
+            <span className="text-white font-semibold text-lg group-hover:text-purple-400">
+              {listing.sellTokenName || listing.sellTokenSymbol || 'Unknown Token'}
+              {listing.sellTokenSymbol && (
+                <span className="text-xs text-gray-500 font-normal ml-1">
+                  {listing.sellTokenSymbol}
+                </span>
+              )}
+            </span>
+            <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-purple-400 ml-1" />
           </a>
           
           {/* Token Description */}
