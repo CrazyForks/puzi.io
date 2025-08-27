@@ -42,7 +42,7 @@ export function useTokenBalance(tokenMint?: string) {
             }
             
             setBalance(Number(account.amount) / Math.pow(10, decimals));
-          } catch (err) {
+          } catch {
             // Account doesn't exist, balance is 0
             setBalance(0);
           }

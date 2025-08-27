@@ -1,39 +1,9 @@
-Ref: https://www.anchor-lang.com/docs/installation
+
 
 # Puzi Program
 
-## 🚀 优化部署 - 节省 SOL
-
-**已优化：从 2 SOL 降至 1.82 SOL (节省 ~10%)**
-
-### 快速部署
-
-```bash
-# 一键部署流程（优化版本）
-./deploy.sh
-
-# 或分步执行：
-./build_ultra_optimized.sh  # 构建优化版本 (193KB)
-./build_idl.sh              # 单独构建 IDL 给前端
-solana program deploy target/deploy/puzi.so
-```
-
-### 构建脚本说明
-
-| 脚本 | 用途 | 大小 | 部署成本 |
-|-----|------|------|---------|
-| `build_ultra_optimized.sh` | 生产部署版本 | 193KB | ~1.82 SOL |
-| `build_minimal.sh` | 激进优化测试 | 193KB | ~1.82 SOL |
-| `build_idl.sh` | 单独构建IDL | - | - |
-| `deploy.sh` | 完整部署流程 | - | - |
-
-### 优化详情
-
-- ✅ 移除 IDL（单独构建）
-- ✅ 精简错误消息
-- ✅ 优化编译参数
-- ✅ 减小栈大小
-- ✅ 符号剥离
+## Refs
+- https://www.anchor-lang.com/docs/installation
 
 ## Init steps
 
@@ -134,3 +104,5 @@ solana program show <BUFFER_ADDRESS>
   Blockhash expired. 1 retries remaining
   Blockhash expired. 0 retries remaining
   ```
+
+

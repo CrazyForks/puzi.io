@@ -9,7 +9,6 @@ import { getPaymentTokens, KnownToken } from "@/config/known-tokens";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund, getTokenAccountRentCost } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 interface TokenInfo {

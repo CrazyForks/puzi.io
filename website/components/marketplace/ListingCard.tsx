@@ -6,7 +6,6 @@ import { getTokenByMint } from "@/config/known-tokens";
 import { useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund } from "@/utils/rent";
-import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 interface ListingCardProps {
@@ -33,8 +32,6 @@ export function ListingCard({
   const { connection } = useConnection();
   const { setVisible: setWalletModalVisible } = useWalletModal();
   const [baseRentRefund, setBaseRentRefund] = useState<number | null>(null);
-  const isWrappedSOL = listing.sellMint === WRAPPED_SOL_MINT.toString() || 
-                       listing.sellMint === "So11111111111111111111111111111111111111112";
 
   useEffect(() => {
     if (isOwner) {
@@ -43,7 +40,7 @@ export function ListingCard({
     }
   }, [connection, isOwner]);
   
-  const formatPrice = (pricePerToken: number, buyDecimals: number = 9, sellDecimals: number = 9) => {
+  const formatPrice = (pricePerToken: number, buyDecimals: number = 9) => {
     // pricePerToken 现在直接是每个完整代币的价格（以买币最小单位存储）
     // 转换为UI显示：除以买币的小数位
     const displayPrice = pricePerToken / Math.pow(10, buyDecimals);
@@ -141,7 +138,7 @@ export function ListingCard({
           <span className="text-gray-400">单价:</span>
           <div className="flex items-center gap-1">
             <span className="text-white font-bold">
-              {formatPrice(listing.pricePerToken, listing.buyTokenDecimals ?? 9, listing.sellTokenDecimals ?? 9)}
+              {formatPrice(listing.pricePerToken, listing.buyTokenDecimals ?? 9)}
             </span>
             {(() => {
               const knownToken = getTokenByMint(listing.buyMint);

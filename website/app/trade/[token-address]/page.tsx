@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useParams } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useTokenListings } from "@/components/marketplace/hooks/useTokenListings";
 import { useOnChainTokenMetadata } from "@/components/marketplace/hooks/useOnChainTokenMetadata";
 import { usePurchase } from "@/components/marketplace/hooks/usePurchase";
 import { getTradableTokenBySymbol, isKnownTokenSymbol } from "@/config/tradable-tokens";
-import { Loader2, RefreshCw, ArrowUpDown, ExternalLink, Coins, TrendingUp, TrendingDown, ArrowLeftRight, Plus } from "lucide-react";
+import { Loader2, RefreshCw, ExternalLink, Coins, ArrowLeftRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PurchaseModal } from "@/components/marketplace/PurchaseModal";
@@ -45,7 +45,6 @@ interface OrderBookEntry {
 
 export default function TokenTradePage() {
   const params = useParams();
-  const router = useRouter();
   const rawParam = params["token-address"] as string;
   
   // Check if the parameter is a known token symbol or an address
@@ -61,10 +60,9 @@ export default function TokenTradePage() {
   
   const { publicKey, connected } = useWallet();
   const { setVisible } = useWalletModal();
-  const { sellListings, buyListings, loading, error, refetch } = useTokenListings(tokenAddress);
+  const { sellListings, buyListings, loading, refetch } = useTokenListings(tokenAddress);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
   const { purchaseToken } = usePurchase();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderBookEntry | null>(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -102,7 +100,7 @@ export default function TokenTradePage() {
           // Also fetch on-chain metadata to get decimals and other info
           const metadata = await fetchTokenMetadata(tokenAddress);
           if (metadata) {
-            setTokenInfo(prev => ({
+            setTokenInfo((prev: any) => ({
               ...prev,
               ...metadata,
               // Preserve known token data if on-chain data is missing
@@ -180,16 +178,12 @@ export default function TokenTradePage() {
       };
     });
 
-    // Sort orders
-    const sortedSells = processedSells.sort((a, b) => 
-      sortOrder === "asc" ? a.price - b.price : b.price - a.price
-    );
-    const sortedBuys = processedBuys.sort((a, b) => 
-      sortOrder === "desc" ? a.price - b.price : b.price - a.price
-    );
+    // Sort orders - sells ascending (lowest first), buys descending (highest first)
+    const sortedSells = processedSells.sort((a, b) => a.price - b.price);
+    const sortedBuys = processedBuys.sort((a, b) => b.price - a.price);
 
     return { sellOrders: sortedSells, buyOrders: sortedBuys };
-  }, [sellListings, buyListings, sortOrder]);
+  }, [sellListings, buyListings]);
 
 
   const formatPrice = (price: number) => {
@@ -208,11 +202,8 @@ export default function TokenTradePage() {
     });
   };
 
-  const shortenAddress = (addr: string) => {
-    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-  };
 
-  const handleOrderClick = (order: OrderBookEntry, type: 'buy' | 'sell') => {
+  const handleOrderClick = (order: OrderBookEntry) => {
     if (!connected) {
       setVisible(true);
       return;
@@ -302,7 +293,6 @@ export default function TokenTradePage() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Token Info at the top */}
         {tokenInfo && (
           <Card className="bg-gray-900/50 border-gray-800 p-6">
             <div className="flex items-start gap-4">
@@ -439,7 +429,7 @@ export default function TokenTradePage() {
                               </td>
                               <td className="py-3">
                                 <Button
-                                  onClick={() => handleOrderClick(order, 'sell')}
+                                  onClick={() => handleOrderClick(order)}
                                   size="sm"
                                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium h-7 px-3 text-xs"
                                 >
@@ -524,7 +514,7 @@ export default function TokenTradePage() {
                               </td>
                               <td className="py-3">
                                 <Button
-                                  onClick={() => handleOrderClick(order, 'buy')}
+                                  onClick={() => handleOrderClick(order)}
                                   size="sm"
                                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium h-7 px-3 text-xs"
                                 >

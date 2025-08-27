@@ -79,8 +79,8 @@ export function useTokenListings(tokenAddress: string | undefined) {
 
       // 并行获取卖单和买单
       const [sellAccounts, buyAccounts] = await Promise.all([
-        program.account.listing.all(sellFilters),
-        program.account.listing.all(buyFilters),
+        (program.account as any).listing.all(sellFilters),
+        (program.account as any).listing.all(buyFilters),
       ]);
 
       console.log(`找到 ${sellAccounts.length} 个卖单, ${buyAccounts.length} 个买单`);

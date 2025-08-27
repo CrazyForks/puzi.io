@@ -1,24 +1,15 @@
 import { 
   generateSigner,
-  percentAmount,
-  publicKey,
-  createSignerFromKeypair,
-  keypairIdentity,
-  Umi,
-  KeypairSigner,
-  sol
+  percentAmount
 } from '@metaplex-foundation/umi';
 import { 
   createAndMint,
   TokenStandard,
-  createFungible,
-  mintV1,
-  mplTokenMetadata,
-  createV1
+  mplTokenMetadata
 } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { createUmi as createUmiCore } from '@metaplex-foundation/umi-bundle-defaults';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 
 export interface TokenMetadata {
   name: string;
@@ -121,7 +112,7 @@ export async function createToken({
           mintAddress: mint.publicKey,
           signature: createTx.signature,
         };
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         retries--;
         
@@ -135,18 +126,19 @@ export async function createToken({
     }
 
     throw lastError || new Error('Failed to create token after 3 attempts');
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating token:', error);
     
     // Provide more detailed error messages
-    if (error.message?.includes('blockhash')) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg?.includes('blockhash')) {
       throw new Error('网络连接超时，请检查您的网络连接并重试');
-    } else if (error.message?.includes('insufficient')) {
+    } else if (errorMsg?.includes('insufficient')) {
       throw new Error('账户余额不足，请确保钱包中有足够的 SOL');
-    } else if (error.message?.includes('User rejected')) {
+    } else if (errorMsg?.includes('User rejected')) {
       throw new Error('用户取消了交易');
     } else {
-      throw new Error(`创建代币失败: ${error.message || '未知错误'}`);
+      throw new Error(`创建代币失败: ${errorMsg || '未知错误'}`);
     }
   }
 }
@@ -157,8 +149,7 @@ export async function createTokenWithMetadataUpload({
   metadata,
   supply,
   decimals,
-  imageFile,
-}: CreateTokenParams & { imageFile?: File }) {
+}: CreateTokenParams) {
   try {
     // Ensure wallet is connected
     if (!wallet.publicKey) {

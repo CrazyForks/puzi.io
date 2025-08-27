@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Shield, Zap, Code, ShoppingBag, Coins, Users } from "lucide-react";
+import { ArrowRight, Shield, Zap, Code, Coins } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 

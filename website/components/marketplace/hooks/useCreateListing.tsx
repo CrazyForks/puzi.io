@@ -160,7 +160,7 @@ export function useCreateListing() {
       });
 
       // 添加创建 listing 的指令
-      const createListingIx = await program.methods
+      const createListingIx = await (program as any).methods
         .createListing(
           new BN(params.pricePerToken),
           new BN(params.amount),

@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import { 
   TOKEN_PROGRAM_ID, 
   getAssociatedTokenAddressSync,
-  createCloseAccountInstruction,
-  createTransferInstruction 
 } from "@solana/spl-token";
 import { getTotalRentRefund } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
@@ -75,7 +73,7 @@ export function useCancelListing() {
 
       // 验证 listing 账户是否存在
       try {
-        const listingAccount = await program.account.listing.fetch(listingPda);
+        const listingAccount = await (program.account as any).listing.fetch(listingPda);
         console.log("Listing account found:", listingAccount);
         
         // 验证这是当前用户的 listing
@@ -121,7 +119,7 @@ export function useCancelListing() {
         transaction.feePayer = publicKey;
         
         // 添加取消 listing 的指令
-        const cancelIx = await program.methods
+        const cancelIx = await (program as any).methods
           .cancelListing()
           .accountsPartial({
             seller: publicKey,

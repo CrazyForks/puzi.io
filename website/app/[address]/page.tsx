@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { TokenList, TokenListRef } from "@/components/marketplace/TokenList";
 import { ListingForm } from "@/components/marketplace/ListingForm";
 import { UserListings } from "@/components/marketplace/UserListings";
-import Link from "next/link";
-import { Plus, Store, Copy, Check, Coins } from "lucide-react";
+import { Store, Copy, Check, Coins } from "lucide-react";
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";

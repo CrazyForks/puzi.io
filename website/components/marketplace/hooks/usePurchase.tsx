@@ -4,8 +4,8 @@ import { useState, useCallback } from "react";
 import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
-import { 
-  getAssociatedTokenAddress, 
+import {
+  getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -15,19 +15,15 @@ import {
 } from "@solana/spl-token";
 import { Puzi, IDL } from "@/anchor-idl/idl";
 import { toast } from "sonner";
-import { 
-  WRAPPED_SOL_MINT, 
-  createWrapSolTransaction, 
-  createUnwrapSolTransaction,
-  hasEnoughSolToWrap,
-  getWrappedSolBalance
+import {
+  WRAPPED_SOL_MINT
 } from "@/utils/sol-wrapper";
 import { USDC_MAINNET, USDC_DEVNET, getUSDCSymbol } from "@/utils/usdc-address";
-import { 
-  sendAndConfirmTransaction, 
-  showTransactionSuccess, 
+import {
+  sendAndConfirmTransaction,
+  showTransactionSuccess,
   parseTransactionError,
-  logTransactionError 
+  logTransactionError
 } from "@/utils/transaction-helper";
 
 export function usePurchase() {
@@ -53,13 +49,13 @@ export function usePurchase() {
     }
 
     setLoading(true);
-    
+
     // 先定义这些变量，以便在错误处理中使用
     let escrowSellToken: PublicKey | undefined;
     let buyerSellTokenAccount: PublicKey | undefined;
     let sellerBuyTokenAccount: PublicKey | undefined;
     let buyerBuyTokenAccount: PublicKey | undefined;
-    
+
     // 获取支付代币的名称
     let buyTokenName = "支付代币";
     if (buyMint === "So11111111111111111111111111111111111111112") {
@@ -74,7 +70,7 @@ export function usePurchase() {
         preflightCommitment: "confirmed",
         skipPreflight: false
       });
-      
+
       // 创建 Program 实例 - IDL 已包含 program address
       const program = new Program<Puzi>(IDL, provider);
 
@@ -109,13 +105,13 @@ export function usePurchase() {
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
 
-      const sellerSellTokenAccount = await getAssociatedTokenAddress(
-        sellMintPubkey,
-        sellerPubkey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      );
+      // const sellerSellTokenAccount = await getAssociatedTokenAddress(
+      //   sellMintPubkey,
+      //   sellerPubkey,
+      //   false,
+      //   TOKEN_PROGRAM_ID,
+      //   ASSOCIATED_TOKEN_PROGRAM_ID
+      // );
 
       // Get escrow token account (owned by the listing PDA)
       // 所有代币都作为SPL Token处理
@@ -132,23 +128,23 @@ export function usePurchase() {
 
       // 检查所有必需的token账户
       console.log("检查token账户...");
-      
+
       // 1. 检查买家的buy token账户（用于支付）
       const buyerBuyAccountInfo = await connection.getAccountInfo(buyerBuyTokenAccount);
-      
+
       // 计算需要的金额
       // pricePerToken 现在是每个完整代币的价格（以买币最小单位计）
       // buyAmount 是要购买的数量（以卖币最小单位计）
       // 合约会计算: total_price = pricePerToken * buyAmount / 10^sellDecimals
       const buyDecimals = buyTokenDecimals ?? 9;
       const sellDecimals = sellTokenDecimals ?? 9;
-      
+
       // 计算总价（以买币最小单位计）- 与合约逻辑保持一致
       const totalPriceInSmallestUnit = Math.floor(pricePerToken * buyAmount / Math.pow(10, sellDecimals));
-      
+
       // 转换为UI显示金额
       const neededAmountUI = totalPriceInSmallestUnit / Math.pow(10, buyDecimals);
-      
+
       console.log("价格计算详情:", {
         pricePerToken,
         buyAmount,
@@ -157,28 +153,28 @@ export function usePurchase() {
         totalPriceInSmallestUnit,
         neededAmountUI
       });
-      
+
       // 特殊处理 SOL 购买场景
       if (buyMint === WRAPPED_SOL_MINT.toString() || buyMint === "So11111111111111111111111111111111111111112") {
         console.log("使用 SOL 购买，检查是否需要 wrap");
-        
+
         // 检查 SOL 余额
         const solBalance = await connection.getBalance(publicKey);
         const solBalanceInSol = solBalance / LAMPORTS_PER_SOL;
-        
+
         // 预留 0.01 SOL 作为交易费
         const reserveForFees = 0.01;
         const availableSol = Math.max(0, solBalanceInSol - reserveForFees);
-        
+
         if (availableSol < neededAmountUI) {
           toast.error(`SOL 余额不足！可用余额: ${availableSol.toFixed(4)} SOL, 需要: ${neededAmountUI.toFixed(4)} SOL`);
           return false;
         }
-        
+
         // 检查是否已有 wSOL 账户
         if (!buyerBuyAccountInfo) {
           console.log("创建 wSOL 账户并 wrap SOL");
-          
+
           // 创建 wSOL 账户并 wrap SOL
           transaction.add(
             createAssociatedTokenAccountInstruction(
@@ -190,7 +186,7 @@ export function usePurchase() {
               ASSOCIATED_TOKEN_PROGRAM_ID
             )
           );
-          
+
           // 转账 SOL 到 wSOL 账户
           // 需要精确的金额，不要多 wrap
           const wrapAmount = totalPriceInSmallestUnit;
@@ -201,25 +197,25 @@ export function usePurchase() {
               lamports: wrapAmount,
             })
           );
-          
+
           // Sync native 指令，将 SOL 转换为 wSOL
           transaction.add(
             createSyncNativeInstruction(buyerBuyTokenAccount, TOKEN_PROGRAM_ID)
           );
-          
+
           console.log(`将 wrap ${wrapAmount / LAMPORTS_PER_SOL} SOL`);
         } else {
           // 已有 wSOL 账户，检查余额是否足够
           try {
             const wsolBalance = await connection.getTokenAccountBalance(buyerBuyTokenAccount);
             const currentWsolBalance = wsolBalance.value.uiAmount || 0;
-            
+
             if (currentWsolBalance < neededAmountUI) {
               // 需要补充 wSOL
               const additionalAmount = Math.ceil((neededAmountUI - currentWsolBalance) * LAMPORTS_PER_SOL);
-              
+
               console.log(`当前 wSOL 余额: ${currentWsolBalance}, 需要额外 wrap: ${additionalAmount / LAMPORTS_PER_SOL} SOL`);
-              
+
               // 转账额外的 SOL 到 wSOL 账户
               transaction.add(
                 SystemProgram.transfer({
@@ -228,7 +224,7 @@ export function usePurchase() {
                   lamports: additionalAmount,
                 })
               );
-              
+
               // Sync native 指令
               transaction.add(
                 createSyncNativeInstruction(buyerBuyTokenAccount, TOKEN_PROGRAM_ID)
@@ -263,7 +259,7 @@ export function usePurchase() {
             const balance = await connection.getTokenAccountBalance(buyerBuyTokenAccount);
             console.log("买家buy token余额:", balance.value.uiAmount, buyMint);
             console.log("需要支付的金额:", neededAmountUI);
-            
+
             if (balance.value.uiAmount === null || balance.value.uiAmount < neededAmountUI) {
               toast.error(`${buyTokenName} 余额不足！当前余额: ${balance.value.uiAmount || 0}, 需要: ${neededAmountUI}`);
               return false;
@@ -311,7 +307,7 @@ export function usePurchase() {
       } else {
         console.log("卖家buy token账户已存在");
       }
-      
+
       // 4. 检查escrow token账户（应该在创建Listing时已经创建）
       const escrowAccountInfo = await connection.getAccountInfo(escrowSellToken);
       if (!escrowAccountInfo) {
@@ -332,8 +328,8 @@ export function usePurchase() {
         buyerSellToken: buyerSellTokenAccount.toBase58(),
         buyAmount: buyAmount.toString()
       });
-      
-      const purchaseIx = await program.methods
+
+      const purchaseIx = await (program as any).methods
         .purchase(new BN(buyAmount))
         .accountsPartial({
           buyer: publicKey,
@@ -350,12 +346,12 @@ export function usePurchase() {
         .instruction();
 
       transaction.add(purchaseIx);
-      
+
       // 如果购买的是 Wrapped SOL，在同一笔交易中 unwrap
       // 这不会影响用户的其他 SOL 卖单，因为这是购买到的新代币
       if (sellMint === "So11111111111111111111111111111111111111112" || sellMint === WRAPPED_SOL_MINT.toString()) {
         console.log("购买的是 Wrapped SOL，将在同一笔交易中 unwrap");
-        
+
         // 关闭买家的 wSOL 接收账户以获得 SOL
         transaction.add(
           createCloseAccountInstruction(
@@ -366,15 +362,15 @@ export function usePurchase() {
             TOKEN_PROGRAM_ID
           )
         );
-        
+
         console.log("添加了 unwrap 指令，将购买到的 wSOL 转为 SOL");
       }
-      
+
       // 注意：不要关闭用于支付的 wSOL 账户 (buyerBuyTokenAccount)
       // 因为用户可能还有其他 SOL 卖单需要这个账户
-      
+
       console.log("交易指令数:", transaction.instructions.length);
-      
+
       // 打印每个指令的详情
       transaction.instructions.forEach((ix, index) => {
         console.log(`指令 ${index}:`, {
@@ -387,9 +383,9 @@ export function usePurchase() {
           dataLength: ix.data.length
         });
       });
-      
+
       // 设置交易的 blockhash 和 feePayer
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      const { blockhash } = await connection.getLatestBlockhash('confirmed');
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
@@ -400,14 +396,14 @@ export function usePurchase() {
         instructions: transaction.instructions.length,
         blockhash: blockhash.slice(0, 8) + '...'
       });
-      
+
       const signature = await sendAndConfirmTransaction(provider, transaction);
       console.log("购买成功，交易签名:", signature);
-      
+
       // 使用正确的 decimals 计算显示数量（变量已在前面定义）
       const displayAmount = buyAmount / Math.pow(10, sellDecimals);
       const totalPrice = totalPriceInSmallestUnit / Math.pow(10, buyDecimals);
-      
+
       showTransactionSuccess(signature, "购买成功!", (
         <div className="text-xs text-gray-400">
           购买数量: {displayAmount.toFixed(4)}, 总价: {totalPrice.toFixed(6)}
@@ -428,7 +424,7 @@ export function usePurchase() {
         sellerBuyTokenAccount: sellerBuyTokenAccount?.toBase58(),
         buyerBuyTokenAccount: buyerBuyTokenAccount?.toBase58(),
       });
-      
+
       // 特殊的购买相关错误处理
       let errorMessage = parseTransactionError(error);
       if (error.message?.includes("insufficient") || error.message?.includes("0x1")) {
@@ -438,7 +434,7 @@ export function usePurchase() {
       } else if (error.message?.includes("listingNotActive") || error.message?.includes("0x1770")) {
         errorMessage = "卖单不活跃或已失效";
       }
-      
+
       toast.error(`购买失败: ${errorMessage}`);
       return false;
     } finally {

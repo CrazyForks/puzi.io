@@ -51,7 +51,7 @@ export function useUserListings(userAddress: string) {
 
       // 使用过滤器只获取特定用户的listing账户
       const userPubkey = new PublicKey(userAddress);
-      const userListings = await program.account.listing.all([
+      const userListings = await (program.account as any).listing.all([
         {
           memcmp: {
             offset: 8, // 跳过discriminator (8 bytes)

@@ -53,9 +53,10 @@ export default function NewToken() {
           router.push(`/`);
         }, 2000);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating token:", error);
-      toast.error(`创建失败: ${error.message || "未知错误"}`);
+      const errorMessage = error instanceof Error ? error.message : "未知错误";
+      toast.error(`创建失败: ${errorMessage}`);
     } finally {
       setIsCreating(false);
     }

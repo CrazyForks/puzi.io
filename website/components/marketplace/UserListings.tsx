@@ -8,7 +8,6 @@ import { useCancelListing } from "./hooks/useCancelListing";
 import { Loader2, ShoppingCart, RefreshCw, Store } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
-import { getTokenByMint } from "@/config/known-tokens";
 import { ListingCard } from "./ListingCard";
 import { PurchaseModal } from "./PurchaseModal";
 
@@ -98,16 +97,6 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
       setPurchaseLoadingStates(prev => ({ ...prev, [selectedListing.address]: false }));
       setPurchaseLoading(false);
     }
-  };
-
-  const formatPrice = (pricePerToken: number, buyDecimals: number = 9, sellDecimals: number = 9) => {
-    // pricePerToken 现在直接是每个完整代币的价格（以买币最小单位存储）
-    // 转换为UI显示：除以买币的小数位
-    const displayPrice = pricePerToken / Math.pow(10, buyDecimals);
-    return displayPrice.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 6
-    });
   };
 
   const formatAmount = (amount: number, decimals: number = 9) => {
