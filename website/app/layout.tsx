@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { SolanaProvider } from "@/providers/SolanaProvider";
 import { Toaster } from "sonner";
 import { Header } from "@/components/layout/Header";
+import { Analytics } from "@vercel/analytics/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,7 @@ export default function RootLayout({
             }}
           />
         </SolanaProvider>
+        <Analytics />
       </body>
     </html>
   );
