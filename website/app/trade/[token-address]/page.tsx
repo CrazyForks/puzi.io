@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useTokenListings } from "@/components/marketplace/hooks/useTokenListings";
 import { useOnChainTokenMetadata } from "@/components/marketplace/hooks/useOnChainTokenMetadata";
 import { usePurchase } from "@/components/marketplace/hooks/usePurchase";
+import { getTradableTokenBySymbol, isKnownTokenSymbol } from "@/config/tradable-tokens";
 import { Loader2, RefreshCw, ArrowUpDown, ExternalLink, Coins, TrendingUp, TrendingDown, ArrowLeftRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,7 +45,20 @@ interface OrderBookEntry {
 
 export default function TokenTradePage() {
   const params = useParams();
-  const tokenAddress = params["token-address"] as string;
+  const router = useRouter();
+  const rawParam = params["token-address"] as string;
+  
+  // Check if the parameter is a known token symbol or an address
+  const tokenAddress = useMemo(() => {
+    // Check if it's a known token symbol
+    if (isKnownTokenSymbol(rawParam)) {
+      const token = getTradableTokenBySymbol(rawParam);
+      return token?.address || rawParam;
+    }
+    // Otherwise treat it as an address
+    return rawParam;
+  }, [rawParam]);
+  
   const { publicKey, connected } = useWallet();
   const { setVisible } = useWalletModal();
   const { sellListings, buyListings, loading, error, refetch } = useTokenListings(tokenAddress);
@@ -71,12 +85,42 @@ export default function TokenTradePage() {
   useEffect(() => {
     const loadTokenInfo = async () => {
       if (tokenAddress) {
-        const metadata = await fetchTokenMetadata(tokenAddress);
-        setTokenInfo(metadata);
+        // First check if it's a known tradable token
+        const knownToken = getTradableTokenBySymbol(rawParam);
+        if (knownToken) {
+          // Use known token data first, then fetch additional on-chain metadata
+          setTokenInfo({
+            name: knownToken.name,
+            symbol: knownToken.symbol,
+            address: knownToken.address,
+            description: knownToken.description,
+            image: knownToken.logoURI,
+            website: knownToken.website,
+            twitter: knownToken.twitter,
+          });
+          
+          // Also fetch on-chain metadata to get decimals and other info
+          const metadata = await fetchTokenMetadata(tokenAddress);
+          if (metadata) {
+            setTokenInfo(prev => ({
+              ...prev,
+              ...metadata,
+              // Preserve known token data if on-chain data is missing
+              name: metadata.name || prev?.name,
+              symbol: metadata.symbol || prev?.symbol,
+              description: metadata.description || prev?.description,
+              image: metadata.image || prev?.image,
+            }));
+          }
+        } else {
+          // Not a known token, just fetch on-chain metadata
+          const metadata = await fetchTokenMetadata(tokenAddress);
+          setTokenInfo(metadata);
+        }
       }
     };
     loadTokenInfo();
-  }, [tokenAddress, fetchTokenMetadata]);
+  }, [tokenAddress, rawParam, fetchTokenMetadata]);
 
   // Process sell orders and buy orders
   const { sellOrders, buyOrders } = useMemo(() => {

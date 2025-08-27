@@ -17,6 +17,6 @@
 - [x] 我的铺子里面，有些 token 没有 image
 - [x] 创建卖单 modal 里面，我的代币模块所有 token 都没有 image
 - [x] 点击 RPC 按钮出来一个 modal, 给几个知名 RPC, 也允许用户自己填写 RPC
-- [ ] `trade/v2ex` route
+- [x] `trade/v2ex` route
 - [ ] 在售商品的 card 上带上 symbol，类似于 trade/token 页面
 

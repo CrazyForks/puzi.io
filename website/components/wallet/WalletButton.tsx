@@ -37,6 +37,6 @@ const WalletMultiButton = dynamic(
   }
 );
 
-export function WalletButton() {
-  return <WalletMultiButton />;
+export function WalletButton({ className }: { className?: string }) {
+  return <WalletMultiButton className={className} />;
 }
