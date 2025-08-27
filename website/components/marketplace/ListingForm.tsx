@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { ShoppingCart, Loader2, ChevronDown, Info } from "lucide-react";
 import { useCreateListing } from "./hooks/useCreateListing";
-import { PAYMENT_TOKENS, KnownToken } from "@/config/known-tokens";
+import { getPaymentTokens, KnownToken } from "@/config/known-tokens";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund, getTokenAccountRentCost } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
@@ -29,7 +29,8 @@ interface ListingFormProps {
 export function ListingForm({ selectedToken, onListingComplete }: ListingFormProps) {
   const [sellAmount, setSellAmount] = useState("");
   const [pricePerToken, setPricePerToken] = useState("");
-  const [selectedPaymentToken, setSelectedPaymentToken] = useState<KnownToken>(PAYMENT_TOKENS[0]); // 默认选择USDC
+  const paymentTokens = getPaymentTokens();
+  const [selectedPaymentToken, setSelectedPaymentToken] = useState<KnownToken>(paymentTokens[0]); // 默认选择USDC
   const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
   const [rentCost, setRentCost] = useState<number | null>(null);
   const [needsWsolAccount, setNeedsWsolAccount] = useState(false);
@@ -229,7 +230,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               
               {showPaymentDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {PAYMENT_TOKENS.map((token) => (
+                  {paymentTokens.map((token) => (
                     <button
                       key={token.mint}
                       type="button"

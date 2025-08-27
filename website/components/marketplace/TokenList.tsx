@@ -132,7 +132,19 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  {token.logoURI ? (
+                    <img 
+                      src={token.logoURI} 
+                      alt={token.symbol || "Token"}
+                      className="w-8 h-8 rounded-full object-cover"
+                      onError={(e) => {
+                        // 如果图片加载失败，显示默认图标
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`${token.logoURI ? 'hidden' : ''} w-8 h-8 rounded-full flex items-center justify-center ${
                     token.symbol === "SOL" 
                       ? "bg-gradient-to-r from-green-400 to-blue-500" 
                       : "bg-gradient-to-r from-purple-400 to-blue-500"

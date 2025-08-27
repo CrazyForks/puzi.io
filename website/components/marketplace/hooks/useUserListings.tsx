@@ -6,6 +6,7 @@ import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Puzi, IDL } from "@/anchor-idl/idl";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
+import { getTokenByMint } from "@/config/known-tokens";
 
 interface ListingInfo {
   address: string;
@@ -22,6 +23,7 @@ interface ListingInfo {
   sellTokenDecimals?: number;
   buyTokenName?: string;
   buyTokenSymbol?: string;
+  buyTokenImage?: string;
   buyTokenDecimals?: number;
 }
 
@@ -72,9 +74,30 @@ export function useUserListings(userAddress: string) {
         const sellMintAddress = listing.sellMint.toBase58();
         const buyMintAddress = listing.buyMint.toBase58();
         
+        // 先检查是否是已知代币
+        const knownSellToken = getTokenByMint(sellMintAddress);
+        const knownBuyToken = getTokenByMint(buyMintAddress);
+        
+        // 如果是已知代币，使用已知代币信息；否则从链上获取
         const [sellTokenMetadata, buyTokenMetadata] = await Promise.all([
-          fetchTokenMetadata(sellMintAddress),
-          fetchTokenMetadata(buyMintAddress)
+          knownSellToken 
+            ? Promise.resolve({
+                name: knownSellToken.name,
+                symbol: knownSellToken.symbol,
+                decimals: knownSellToken.decimals,
+                description: `${knownSellToken.name} (${knownSellToken.symbol})`,
+                image: knownSellToken.logoURI || ""
+              })
+            : fetchTokenMetadata(sellMintAddress),
+          knownBuyToken
+            ? Promise.resolve({
+                name: knownBuyToken.name,
+                symbol: knownBuyToken.symbol,
+                decimals: knownBuyToken.decimals,
+                description: `${knownBuyToken.name} (${knownBuyToken.symbol})`,
+                image: knownBuyToken.logoURI || ""
+              })
+            : fetchTokenMetadata(buyMintAddress)
         ]);
 
         // 获取 decimals
@@ -110,8 +133,9 @@ export function useUserListings(userAddress: string) {
           try {
             if (buyMintAddress === "So11111111111111111111111111111111111111112") {
               buyTokenDecimals = 9; // SOL
-            } else if (buyMintAddress === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
-              buyTokenDecimals = 6; // USDC
+            } else if (buyMintAddress === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" || 
+                       buyMintAddress === "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr") {
+              buyTokenDecimals = 6; // USDC (mainnet or devnet)
             } else {
               const { getMint } = await import("@solana/spl-token");
               const mintInfo = await getMint(connection, listing.buyMint);
@@ -135,7 +159,9 @@ export function useUserListings(userAddress: string) {
         const buyTokenInfo = buyTokenMetadata || {
           name: `Token ${buyMintAddress.slice(0, 8)}`,
           symbol: `TK${buyMintAddress.slice(0, 4).toUpperCase()}`,
-          decimals: buyTokenDecimals
+          decimals: buyTokenDecimals,
+          description: "",
+          image: ""
         };
 
         allListings.push({
@@ -153,6 +179,7 @@ export function useUserListings(userAddress: string) {
           sellTokenDecimals,
           buyTokenName: buyTokenInfo.name,
           buyTokenSymbol: buyTokenInfo.symbol,
+          buyTokenImage: buyTokenInfo.image,
           buyTokenDecimals,
         });
       }

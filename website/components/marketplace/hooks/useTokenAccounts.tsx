@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
+import { getTokenByMint } from "@/config/known-tokens";
 
 interface TokenInfo {
   mint: string;
@@ -45,6 +46,7 @@ export function useTokenAccounts() {
             name: "Solana",
             symbol: "SOL",
             decimals: 9,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
           });
         }
       } catch (solError) {
@@ -82,14 +84,28 @@ export function useTokenAccounts() {
             // 不添加 Wrapped SOL 到列表
             console.log("跳过 Wrapped SOL，使用原生 SOL 代替");
           } else {
-            // 先添加基本信息，后续异步获取元数据
-            tokenList.push({
-              mint: mintAddress,
-              amount,
-              name: `Token ${mintAddress.slice(0, 8)}`,
-              symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
-              decimals,
-            });
+            // 先检查是否是已知代币
+            const knownToken = getTokenByMint(mintAddress);
+            if (knownToken) {
+              // 使用已知代币信息
+              tokenList.push({
+                mint: mintAddress,
+                amount,
+                name: knownToken.name,
+                symbol: knownToken.symbol,
+                decimals,
+                logoURI: knownToken.logoURI,
+              });
+            } else {
+              // 先添加基本信息，后续异步获取元数据
+              tokenList.push({
+                mint: mintAddress,
+                amount,
+                name: `Token ${mintAddress.slice(0, 8)}`,
+                symbol: `TK${mintAddress.slice(0, 4).toUpperCase()}`,
+                decimals,
+              });
+            }
           }
         }
       }
@@ -97,9 +113,9 @@ export function useTokenAccounts() {
       // 先设置基本信息
       setTokens(tokenList);
 
-      // 异步获取所有代币的链上元数据（排除原生 SOL）
+      // 异步获取所有代币的链上元数据（排除原生 SOL 和已知代币）
       const mintAddresses = tokenList
-        .filter(token => token.mint !== "SOL_NATIVE")
+        .filter(token => token.mint !== "SOL_NATIVE" && !token.logoURI)
         .map(token => token.mint);
       
       if (mintAddresses.length > 0) {

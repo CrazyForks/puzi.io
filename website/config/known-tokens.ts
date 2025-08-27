@@ -80,15 +80,15 @@ export function getKnownTokens(): KnownToken[] {
   return network === 'mainnet' ? MAINNET_TOKENS : DEVNET_TOKENS;
 }
 
-export const KNOWN_TOKENS: KnownToken[] = getKnownTokens();
-
-// Helper functions
+// Helper functions - dynamically get tokens based on current network
 export function getTokenByMint(mint: string): KnownToken | undefined {
-  return KNOWN_TOKENS.find(token => token.mint === mint);
+  const tokens = getKnownTokens();
+  return tokens.find(token => token.mint === mint);
 }
 
 export function getTokenBySymbol(symbol: string): KnownToken | undefined {
-  return KNOWN_TOKENS.find(token => token.symbol === symbol);
+  const tokens = getKnownTokens();
+  return tokens.find(token => token.symbol === symbol);
 }
 
 // Payment tokens based on network
@@ -104,4 +104,3 @@ export function getPaymentTokens(): KnownToken[] {
   });
 }
 
-export const PAYMENT_TOKENS = getPaymentTokens();
