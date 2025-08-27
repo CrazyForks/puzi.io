@@ -4,23 +4,23 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rpcProvider, type Network } from "@/utils/rpc-provider";
-import { Settings, Wifi, WifiOff, ChevronDown, X, Check } from "lucide-react";
+import { Settings, Wifi, WifiOff, ChevronDown, X, Check, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function RPCSettings() {
   const [network, setNetwork] = useState<Network>("devnet");
   const [currentEndpoint, setCurrentEndpoint] = useState("");
-  const [isHealthy, setIsHealthy] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [customRPCInput, setCustomRPCInput] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [savedCustomRPC, setSavedCustomRPC] = useState<string | null>(null);
-  const [checkingHealth, setCheckingHealth] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('connected');
 
   useEffect(() => {
     // Initialize state from RPC provider
     setNetwork(rpcProvider.getNetwork());
     setCurrentEndpoint(rpcProvider.getCurrentEndpoint());
+    setConnectionStatus(rpcProvider.getConnectionStatus());
     
     // Check if there's a saved custom RPC
     if (typeof window !== 'undefined') {
@@ -33,7 +33,6 @@ export function RPCSettings() {
     // Listen for RPC changes
     const handleEndpointChange = (endpoint: string) => {
       setCurrentEndpoint(endpoint);
-      checkHealth(endpoint);
       
       // Update saved custom RPC state if it was cleared
       if (typeof window !== 'undefined') {
@@ -42,13 +41,17 @@ export function RPCSettings() {
       }
     };
     
-    rpcProvider.addListener(handleEndpointChange);
+    // Listen for connection status changes
+    const handleStatusChange = (status: 'connected' | 'disconnected' | 'checking') => {
+      setConnectionStatus(status);
+    };
     
-    // Initial health check
-    checkHealth(rpcProvider.getCurrentEndpoint());
+    rpcProvider.addListener(handleEndpointChange);
+    rpcProvider.addStatusListener(handleStatusChange);
     
     return () => {
       rpcProvider.removeListener(handleEndpointChange);
+      rpcProvider.removeStatusListener(handleStatusChange);
     };
   }, []);
 
@@ -69,11 +72,6 @@ export function RPCSettings() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [dropdownOpen]);
-
-  const checkHealth = async (endpoint: string) => {
-    const healthy = await rpcProvider.checkEndpointHealth(endpoint);
-    setIsHealthy(healthy);
-  };
 
   const handleNetworkChange = (newNetwork: Network) => {
     // Clear custom RPC when switching networks
@@ -103,30 +101,22 @@ export function RPCSettings() {
       return;
     }
 
-    setCheckingHealth(true);
+    rpcProvider.setCustomRPC(customRPCInput);
+    setSavedCustomRPC(customRPCInput);
+    toast.success("自定义 RPC 已设置");
     
-    try {
-      // Check endpoint health
-      const healthy = await rpcProvider.checkEndpointHealth(customRPCInput);
-      
-      setCheckingHealth(false);
-      
-      if (!healthy) {
-        toast.error("无法连接到该 RPC 节点");
-        return;
-      }
+    // Close input and dropdown
+    setShowCustomInput(false);
+    setDropdownOpen(false);
+    setCustomRPCInput("");
+  };
 
-      rpcProvider.setCustomRPC(customRPCInput);
-      setSavedCustomRPC(customRPCInput);
-      toast.success("自定义 RPC 已设置");
-      
-      // Close input and dropdown
-      setShowCustomInput(false);
-      setDropdownOpen(false);
-      setCustomRPCInput("");
-    } catch (error) {
-      setCheckingHealth(false);
-      toast.error("检查 RPC 节点时出错");
+  const handleManualHealthCheck = async () => {
+    const isHealthy = await rpcProvider.checkHealth();
+    if (isHealthy) {
+      toast.success("连接正常");
+    } else {
+      toast.error("连接失败，请检查网络或更换 RPC");
     }
   };
 
@@ -159,18 +149,16 @@ export function RPCSettings() {
       <Button 
         variant="ghost" 
         size="sm" 
-        className="flex items-center gap-2 text-gray-300 hover:text-white"
+        className="flex items-center gap-1"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
-        {isHealthy ? (
+        {connectionStatus === 'checking' ? (
+          <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
+        ) : connectionStatus === 'connected' ? (
           <Wifi className="w-4 h-4 text-green-500" />
         ) : (
           <WifiOff className="w-4 h-4 text-red-500" />
         )}
-        <span className="text-xs">
-          {getNetworkDisplayName()}
-        </span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
       </Button>
 
       {dropdownOpen && (
@@ -225,7 +213,6 @@ export function RPCSettings() {
                     value={customRPCInput}
                     onChange={(e) => setCustomRPCInput(e.target.value)}
                     className="flex-1 h-8 text-sm bg-gray-800 border-gray-700"
-                    disabled={checkingHealth}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleCustomRPCSubmit();
@@ -235,10 +222,10 @@ export function RPCSettings() {
                   <Button
                     size="sm"
                     onClick={handleCustomRPCSubmit}
-                    disabled={checkingHealth || !customRPCInput.trim()}
+                    disabled={!customRPCInput.trim()}
                     className="h-8 px-2"
                   >
-                    {checkingHealth ? "..." : "确定"}
+                    确定
                   </Button>
                   <Button
                     size="sm"
@@ -270,20 +257,36 @@ export function RPCSettings() {
           </div>
 
           <div className="border-t border-gray-800 mt-2 pt-2 px-2">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              {isHealthy ? (
-                <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span>连接正常</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 bg-red-500 rounded-full" />
-                  <span>连接异常</span>
-                </>
-              )}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                {connectionStatus === 'checking' ? (
+                  <>
+                    <Loader2 className="w-2 h-2 text-yellow-500 animate-spin" />
+                    <span>检查中...</span>
+                  </>
+                ) : connectionStatus === 'connected' ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span>连接正常</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    <span>连接异常</span>
+                  </>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleManualHealthCheck}
+                disabled={connectionStatus === 'checking'}
+                className="h-6 px-2 text-xs"
+              >
+                <RefreshCw className={`w-3 h-3 ${connectionStatus === 'checking' ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
-            <div className="text-xs text-gray-600 mt-1 break-all">
+            <div className="text-xs text-gray-600 break-all">
               {currentEndpoint}
             </div>
           </div>

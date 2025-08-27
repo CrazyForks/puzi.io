@@ -17,6 +17,12 @@ import { toast } from "sonner";
 import { BN } from "@coral-xyz/anchor";
 import { getTotalRentRefund } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
+import { 
+  sendAndConfirmTransaction, 
+  showTransactionSuccess, 
+  parseTransactionError,
+  logTransactionError 
+} from "@/utils/transaction-helper";
 
 interface CreateListingParams {
   sellMint: string;
@@ -41,9 +47,11 @@ export function useCreateListing() {
     setLoading(true);
 
     try {
-      // 创建 Anchor Provider
+      // 创建 Anchor Provider - 增加超时时间
       const provider = new AnchorProvider(connection, wallet, {
         commitment: "confirmed",
+        preflightCommitment: "confirmed",
+        skipPreflight: false
       });
 
       // 创建 Program 实例 - IDL 已包含 program address
@@ -174,12 +182,7 @@ export function useCreateListing() {
       transaction.add(createListingIx);
       
       // 发送交易
-      const tx = await provider.sendAndConfirm(transaction, [], {
-        skipPreflight: false,
-        commitment: 'confirmed'
-      });
-
-      console.log("Transaction signature:", tx);
+      const tx = await sendAndConfirmTransaction(provider, transaction);
 
       // 计算实际支付的租金
       let rentCost = await getTotalRentRefund(connection);
@@ -199,49 +202,18 @@ export function useCreateListing() {
         }
       }
 
-      toast.success("卖单创建成功!", {
-        description: (
-          <div className="space-y-1">
-            <div>交易ID: {tx.slice(0, 8)}...{tx.slice(-8)}</div>
-            <div className="text-xs text-yellow-500">
-              支付租金: {rentCost.toFixed(6)} SOL{rentNote}
-            </div>
-          </div>
-        ) as any,
-      });
+      // 显示成功消息
+      showTransactionSuccess(tx, "卖单创建成功!", (
+        <div className="text-xs text-yellow-500">
+          支付租金: {rentCost.toFixed(6)} SOL{rentNote}
+        </div>
+      ));
 
       return true;
     } catch (error: any) {
-      console.error("Failed to create listing:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        logs: error?.logs,
-        error: error?.error,
-        errorCode: error?.error?.errorCode,
-        errorMessage: error?.error?.errorMessage,
-      });
-      
-      let errorMessage = "创建卖单失败";
-      if (error instanceof Error) {
-        if (error.message.includes("insufficient funds")) {
-          errorMessage = "余额不足";
-        } else if (error.message.includes("User rejected")) {
-          errorMessage = "交易被取消";
-        } else if (error.message.includes("custom program error")) {
-          // Parse custom program errors
-          const match = error.message.match(/custom program error: (0x[a-fA-F0-9]+)/);
-          if (match) {
-            const errorCode = match[1];
-            errorMessage = `程序错误: ${errorCode}`;
-          } else {
-            errorMessage = error.message;
-          }
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      toast.error(errorMessage);
+      logTransactionError(error, "Create listing");
+      const errorMessage = parseTransactionError(error);
+      toast.error(`创建卖单失败: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);

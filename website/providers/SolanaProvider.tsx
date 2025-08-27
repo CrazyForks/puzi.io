@@ -35,7 +35,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   const connectionConfig = useMemo(
     () => ({
       commitment: 'confirmed' as const,
-      confirmTransactionInitialTimeout: 60000,
+      confirmTransactionInitialTimeout: 10000,
     }),
     []
   );

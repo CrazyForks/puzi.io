@@ -23,6 +23,12 @@ import {
   getWrappedSolBalance
 } from "@/utils/sol-wrapper";
 import { USDC_MAINNET, USDC_DEVNET, getUSDCSymbol } from "@/utils/usdc-address";
+import { 
+  sendAndConfirmTransaction, 
+  showTransactionSuccess, 
+  parseTransactionError,
+  logTransactionError 
+} from "@/utils/transaction-helper";
 
 export function usePurchase() {
   const { connection } = useConnection();
@@ -65,6 +71,8 @@ export function usePurchase() {
     try {
       const provider = new AnchorProvider(connection, wallet, {
         commitment: "confirmed",
+        preflightCommitment: "confirmed",
+        skipPreflight: false
       });
       
       // 创建 Program 实例 - IDL 已包含 program address
@@ -393,33 +401,22 @@ export function usePurchase() {
         blockhash: blockhash.slice(0, 8) + '...'
       });
       
-      const signature = await provider.sendAndConfirm(transaction, [], {
-        skipPreflight: false,
-        commitment: 'confirmed',
-        maxRetries: 3
-      });
-      
+      const signature = await sendAndConfirmTransaction(provider, transaction);
       console.log("购买成功，交易签名:", signature);
       
       // 使用正确的 decimals 计算显示数量（变量已在前面定义）
       const displayAmount = buyAmount / Math.pow(10, sellDecimals);
       const totalPrice = totalPriceInSmallestUnit / Math.pow(10, buyDecimals);
       
-      toast.success(`成功购买！交易已完成`, {
-        description: `购买数量: ${displayAmount}, 总价: ${totalPrice.toFixed(6)}`
-      });
+      showTransactionSuccess(signature, "购买成功!", (
+        <div className="text-xs text-gray-400">
+          购买数量: {displayAmount.toFixed(4)}, 总价: {totalPrice.toFixed(6)}
+        </div>
+      ));
 
       return true;
     } catch (error: any) {
-      console.error("购买失败:", error);
-      
-      // 如果有日志，打印出来
-      if (error.logs) {
-        console.error("交易日志:");
-        error.logs.forEach((log: string, index: number) => {
-          console.error(`  [${index}] ${log}`);
-        });
-      }
+      logTransactionError(error, "Purchase");
       console.error("错误详情:", {
         sellMint,
         buyMint,
@@ -430,41 +427,19 @@ export function usePurchase() {
         buyerSellTokenAccount: buyerSellTokenAccount?.toBase58(),
         sellerBuyTokenAccount: sellerBuyTokenAccount?.toBase58(),
         buyerBuyTokenAccount: buyerBuyTokenAccount?.toBase58(),
-        errorLogs: error.logs || [],
       });
       
-      let errorMessage = "购买失败";
-      
-      // 检查具体的错误类型
-      if (error.logs) {
-        // 查找程序错误日志
-        const errorLog = error.logs.find((log: string) => 
-          log.includes("Error") || 
-          log.includes("failed") || 
-          log.includes("insufficient") ||
-          log.includes("InsufficientStock") ||
-          log.includes("listingNotActive")
-        );
-        if (errorLog) {
-          console.error("程序错误日志:", errorLog);
-        }
-      }
-      
+      // 特殊的购买相关错误处理
+      let errorMessage = parseTransactionError(error);
       if (error.message?.includes("insufficient") || error.message?.includes("0x1")) {
         errorMessage = `${buyTokenName} 余额不足`;
-      } else if (error.message?.includes("User rejected")) {
-        errorMessage = "用户取消了交易";
       } else if (error.message?.includes("InsufficientStock") || error.message?.includes("0x1772")) {
         errorMessage = "库存不足";
       } else if (error.message?.includes("listingNotActive") || error.message?.includes("0x1770")) {
         errorMessage = "卖单不活跃或已失效";
-      } else if (error.message?.includes("simulation")) {
-        errorMessage = "交易模拟失败，请检查余额和网络状态";
-      } else if (error.message) {
-        errorMessage = error.message.substring(0, 100); // 限制错误信息长度
       }
       
-      toast.error(errorMessage);
+      toast.error(`购买失败: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);

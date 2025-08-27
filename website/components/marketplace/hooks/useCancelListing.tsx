@@ -15,6 +15,12 @@ import {
 import { getTotalRentRefund } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
 import { Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { 
+  sendAndConfirmTransaction, 
+  showTransactionSuccess, 
+  parseTransactionError,
+  logTransactionError 
+} from "@/utils/transaction-helper";
 
 export function useCancelListing() {
   const { connection } = useConnection();
@@ -38,6 +44,8 @@ export function useCancelListing() {
       // 创建 Anchor Provider
       const provider = new AnchorProvider(connection, wallet, {
         commitment: "confirmed",
+        preflightCommitment: "confirmed",
+        skipPreflight: false
       });
 
       // 创建 Program 实例 - IDL 已包含 program address
@@ -134,13 +142,8 @@ export function useCancelListing() {
         // 用户可以在钱包中随时手动 unwrap
         
         console.log("Executing cancel listing transaction...");
-        const tx = await provider.sendAndConfirm(transaction, [], {
-          skipPreflight: false,
-          commitment: 'confirmed'
-        });
-        
+        const tx = await sendAndConfirmTransaction(provider, transaction);
         console.log("Transaction executed successfully");
-        console.log("Cancel listing transaction:", tx);
 
         // 计算返还的租金
         let rentRefund = await getTotalRentRefund(connection, true);
@@ -153,54 +156,39 @@ export function useCancelListing() {
           rentNote = "(Listing + Escrow + wSOL账户)";
         }
 
-        toast.success("卖单已取消", {
-          description: (
-            <div className="space-y-1">
-              <div>交易ID: {tx.slice(0, 8)}...{tx.slice(-8)}</div>
-              <div className="text-xs text-gray-400">
-                返还租金: {rentRefund.toFixed(6)} SOL {rentNote}
-              </div>
-            </div>
-          ) as any,
-        });
+        showTransactionSuccess(tx, "卖单已取消", (
+          <div className="text-xs text-gray-400">
+            返还租金: {rentRefund.toFixed(6)} SOL {rentNote}
+          </div>
+        ));
 
         return true;
       } catch (innerError) {
         console.error("Error in transaction process:", innerError);
         throw innerError; // 重新抛出错误给外层 catch 处理
       }
-    } catch (error) {
-      console.error("Failed to cancel listing:", error);
+    } catch (error: any) {
+      logTransactionError(error, "Cancel listing");
       console.error("Error details:", {
         listingAddress,
         sellMint,
         listingId,
         publicKey: publicKey?.toBase58(),
-        error: error instanceof Error ? error.message : String(error)
       });
       
-      let errorMessage = "取消卖单失败";
+      // 特殊的取消相关错误处理
+      let errorMessage = parseTransactionError(error);
       if (error instanceof Error) {
-        if (error.message.includes("User rejected")) {
-          errorMessage = "交易被取消";
-        } else if (error.message.includes("Unauthorized")) {
+        if (error.message.includes("Unauthorized")) {
           errorMessage = "无权限取消此卖单";
-        } else if (error.message.includes("0x1") || error.message.includes("InsufficientFunds")) {
-          errorMessage = "余额不足支付交易费用";
-        } else if (error.message.includes("0x7d1")) {
-          errorMessage = "账户不存在或已被关闭";
-        } else if (error.message.includes("0x7d0")) {
-          errorMessage = "无效的账户数据";
         } else if (error.message.includes("seeds constraint")) {
           errorMessage = "无效的卖单地址";
         } else if (error.message.includes("A raw constraint was violated")) {
           errorMessage = "权限验证失败，只能取消自己的卖单";
-        } else {
-          errorMessage = `取消失败: ${error.message}`;
         }
       }
       
-      toast.error(errorMessage);
+      toast.error(`取消卖单失败: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);

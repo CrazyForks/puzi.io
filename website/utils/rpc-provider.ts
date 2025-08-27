@@ -3,15 +3,14 @@ import { Connection } from '@solana/web3.js';
 export interface RPCEndpoint {
   name: string;
   url: string;
-  weight?: number; // For load balancing
 }
 
 export const MAINNET_ENDPOINTS: RPCEndpoint[] = [
-  { name: 'Solana Public', url: 'https://api.mainnet-beta.solana.com', weight: 1 },
+  { name: 'Solana Public', url: 'https://solana-rpc.publicnode.com' },
 ];
 
 export const DEVNET_ENDPOINTS: RPCEndpoint[] = [
-  { name: 'Solana Devnet', url: 'https://api.devnet.solana.com', weight: 1 },
+  { name: 'Solana Devnet', url: 'https://api.devnet.solana.com' },
 ];
 
 export type Network = 'mainnet' | 'devnet';
@@ -22,8 +21,9 @@ class RPCProvider {
   private currentEndpointIndex: number = 0;
   private customRPC: string | null = null;
   private connection: Connection | null = null;
-  private healthCheckInterval: NodeJS.Timeout | null = null;
   private listeners: Set<(endpoint: string) => void> = new Set();
+  private connectionStatus: 'connected' | 'disconnected' | 'checking' = 'connected';
+  private statusListeners: Set<(status: 'connected' | 'disconnected' | 'checking') => void> = new Set();
 
   constructor() {
     // Load saved settings
@@ -37,10 +37,10 @@ class RPCProvider {
       if (savedCustomRPC) {
         this.setCustomRPC(savedCustomRPC);
       }
+      
+      // Do initial health check
+      this.checkHealth();
     }
-    
-    // Start health check
-    this.startHealthCheck();
   }
 
   setNetwork(network: Network) {
@@ -71,6 +71,8 @@ class RPCProvider {
     }
     
     this.notifyListeners();
+    // Check health when network changes
+    this.checkHealth();
   }
 
   setCustomRPC(url: string | null) {
@@ -86,6 +88,10 @@ class RPCProvider {
     }
     
     this.notifyListeners();
+    // Check health when custom RPC changes
+    if (url) {
+      this.checkHealth();
+    }
   }
 
   getCurrentEndpoint(): string {
@@ -101,77 +107,11 @@ class RPCProvider {
     if (!this.connection || this.connection.rpcEndpoint !== endpoint) {
       this.connection = new Connection(endpoint, {
         commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 60000,
+        confirmTransactionInitialTimeout: 10000,
       });
     }
     
     return this.connection;
-  }
-
-  async checkEndpointHealth(endpoint: string): Promise<boolean> {
-    try {
-      const conn = new Connection(endpoint, { 
-        commitment: 'confirmed',
-        disableRetryOnRateLimit: true,
-      });
-      const startTime = Date.now();
-      
-      // Use getVersion as a simpler health check
-      await conn.getVersion();
-      
-      const latency = Date.now() - startTime;
-      
-      // Consider endpoint healthy if response time is under 5 seconds
-      return latency < 5000;
-    } catch (error) {
-      console.warn(`RPC endpoint ${endpoint} health check failed`);
-      return false;
-    }
-  }
-
-  async switchToNextEndpoint(): Promise<boolean> {
-    if (this.customRPC) {
-      // If using custom RPC, don't switch
-      return false;
-    }
-
-    const startIndex = this.currentEndpointIndex;
-    
-    do {
-      this.currentEndpointIndex = (this.currentEndpointIndex + 1) % this.endpoints.length;
-      const endpoint = this.endpoints[this.currentEndpointIndex].url;
-      
-      const isHealthy = await this.checkEndpointHealth(endpoint);
-      if (isHealthy) {
-        console.log(`Switched to RPC endpoint: ${endpoint}`);
-        this.connection = null; // Reset connection
-        this.notifyListeners();
-        return true;
-      }
-    } while (this.currentEndpointIndex !== startIndex);
-    
-    console.error('All RPC endpoints are unhealthy');
-    return false;
-  }
-
-  private startHealthCheck() {
-    // Check health every 60 seconds
-    this.healthCheckInterval = setInterval(async () => {
-      const endpoint = this.getCurrentEndpoint();
-      const isHealthy = await this.checkEndpointHealth(endpoint);
-      
-      if (!isHealthy && !this.customRPC) {
-        console.log('Current RPC endpoint is unhealthy, switching...');
-        await this.switchToNextEndpoint();
-      }
-    }, 60000);
-  }
-
-  stopHealthCheck() {
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = null;
-    }
   }
 
   addListener(callback: (endpoint: string) => void) {
@@ -200,6 +140,53 @@ class RPCProvider {
       return 'Custom RPC';
     }
     return this.endpoints[this.currentEndpointIndex].name;
+  }
+
+  // Health check
+  async checkHealth(): Promise<boolean> {
+    this.setConnectionStatus('checking');
+    
+    try {
+      const endpoint = this.getCurrentEndpoint();
+      const testConnection = new Connection(endpoint, {
+        commitment: 'confirmed',
+        disableRetryOnRateLimit: true,
+      });
+      
+      // Simple health check - just try to get version
+      await testConnection.getVersion();
+      
+      this.setConnectionStatus('connected');
+      return true;
+    } catch (error) {
+      console.warn('RPC health check failed:', error);
+      this.setConnectionStatus('disconnected');
+      return false;
+    }
+  }
+
+  // Connection status management
+  private setConnectionStatus(status: 'connected' | 'disconnected' | 'checking') {
+    if (this.connectionStatus !== status) {
+      this.connectionStatus = status;
+      this.notifyStatusListeners();
+    }
+  }
+
+  getConnectionStatus(): 'connected' | 'disconnected' | 'checking' {
+    return this.connectionStatus;
+  }
+
+  addStatusListener(callback: (status: 'connected' | 'disconnected' | 'checking') => void) {
+    this.statusListeners.add(callback);
+  }
+
+  removeStatusListener(callback: (status: 'connected' | 'disconnected' | 'checking') => void) {
+    this.statusListeners.delete(callback);
+  }
+
+  private notifyStatusListeners() {
+    this.statusListeners.forEach(callback => callback(this.connectionStatus));
   }
 }
 

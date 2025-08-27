@@ -257,16 +257,47 @@ export default function TokenTradePage() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Token Info at the top */}
+        {tokenInfo && (
+          <Card className="bg-gray-900/50 border-gray-800 p-6">
+            <div className="flex items-start gap-4">
+              {tokenInfo.image && (
+                <img 
+                  src={tokenInfo.image} 
+                  alt={tokenInfo.name || 'Token'} 
+                  className="w-16 h-16 rounded-full"
+                />
+              )}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <a 
+                    href={`https://solscan.io/token/${tokenAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-2xl font-bold text-white hover:text-purple-400 transition-colors inline-flex items-center gap-2"
+                  >
+                    {tokenInfo.name || 'Unknown Token'}
+                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                  </a>
+                  {tokenInfo.symbol && (
+                    <span className="text-gray-400 text-lg">({tokenInfo.symbol})</span>
+                  )}
+                </div>
+                {tokenInfo.description && (
+                  <p className="text-gray-400 text-sm">{tokenInfo.description}</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Coins className="w-8 h-8 text-purple-400" />
-              {tokenInfo?.symbol || 'Token'} / USDC
-            </h1>
-            <p className="text-gray-400 mt-1">
-              交易对订单簿
-            </p>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Coins className="w-6 h-6 text-purple-400" />
+              {tokenInfo?.symbol || 'Token'} / USDC 交易对
+            </h2>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -460,56 +491,6 @@ export default function TokenTradePage() {
           </Card>
         </div>
 
-        {/* Token Info */}
-        <Card className="bg-gray-900/50 border-gray-800 p-6">
-          <div className="space-y-4">
-            {tokenInfo && (
-              <div className="flex items-start gap-3">
-                {tokenInfo.image && (
-                  <img 
-                    src={tokenInfo.image} 
-                    alt={tokenInfo.name || 'Token'} 
-                    className="w-12 h-12 rounded-full"
-                  />
-                )}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-white font-semibold">
-                      {tokenInfo.name || 'Unknown Token'}
-                    </h3>
-                    {tokenInfo.symbol && (
-                      <span className="text-gray-400 text-sm">({tokenInfo.symbol})</span>
-                    )}
-                  </div>
-                  {tokenInfo.description && (
-                    <p className="text-gray-400 text-sm mt-1">{tokenInfo.description}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-purple-400 mt-2"></div>
-              <div className="text-sm text-gray-400 space-y-1">
-                <p>
-                  代币地址: 
-                  <a 
-                    href={`https://solscan.io/token/${tokenAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white font-mono hover:text-purple-400 transition-colors ml-2 inline-flex items-center gap-1"
-                  >
-                    {tokenAddress.slice(0, 8)}...{tokenAddress.slice(-8)}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </p>
-                <p className="mt-2">
-                  <strong>提示：</strong>买单显示的是其他用户用不同代币购买此代币的订单（反向挂单）
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
 
         {/* Purchase Modal - Using shared component */}
         <PurchaseModal
@@ -685,9 +666,10 @@ export default function TokenTradePage() {
                       const buyToken = listingType === 'sell-token' ? usdcAddress : tokenAddress;
                       
                       // Get decimals for proper conversion
-                      // For now, assume USDC has 6 decimals and most tokens have 9
-                      const sellDecimals = listingType === 'sell-token' ? 9 : USDC_DECIMALS; // Token: 9, USDC: 6
-                      const buyDecimals = listingType === 'sell-token' ? USDC_DECIMALS : 9; // USDC: 6, Token: 9
+                      // Use actual token decimals from tokenInfo, fallback to 9 if not available
+                      const tokenDecimals = tokenInfo?.decimals ?? 9;
+                      const sellDecimals = listingType === 'sell-token' ? tokenDecimals : USDC_DECIMALS;
+                      const buyDecimals = listingType === 'sell-token' ? USDC_DECIMALS : tokenDecimals;
                       
                       // Convert amount to smallest units
                       const amountInSmallestUnit = Math.floor(parseFloat(listingAmount) * Math.pow(10, sellDecimals));

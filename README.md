@@ -14,16 +14,7 @@
 
 
 ## TODO
-- 买光之后卖单自动消失很好，租金去哪里了？
-- website 支持部署两种环境，devnet + mainnet
-- contract 支持原生 sol
-- 市场卖单翻页+ filter
-- 页面设计优化
-  - 
+- [ ] 我的铺子里面，有些 token 没有 image
+- [ ] 创建卖单 modal 里面，我的代币模块所有 token 都没有 image
 
-## Dev net 
 
-- usdc dev: https://spl-token-faucet.com/?token-name=USDC-Dev
-- sol
-  - https://faucet.solana.com/
-  - solana airdrop 5 --url devnet
