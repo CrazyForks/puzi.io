@@ -179,12 +179,12 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
               {showAddButton && (
                 <button
                   onClick={onAddListing}
-                  className="border-2 border-dashed border-gray-600 rounded-xl p-5 flex flex-col items-center justify-center gap-3 hover:border-purple-500 hover:bg-purple-500/5 transition-all group h-full min-h-[280px] cursor-pointer"
+                  className="border-2 border-dashed border-gray-600 rounded-xl p-0 sm:p-5 flex flex-col items-center justify-center gap-2 sm:gap-3 hover:border-purple-500 hover:bg-purple-500/5 transition-all group h-full min-h-[180px] sm:min-h-[280px] cursor-pointer"
                 >
-                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
-                    <Store className="w-6 h-6 text-purple-400" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                    <Store className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                   </div>
-                  <span className="text-gray-400 group-hover:text-white transition-colors font-medium">
+                  <span className="text-gray-400 group-hover:text-white transition-colors font-medium text-sm sm:text-base">
                     上架商品
                   </span>
                 </button>

@@ -50,21 +50,25 @@ export function Header() {
             <WalletButton />
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={toggleMobileMenu}
-            className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
+          {/* Mobile Menu with RPC and Wallet always visible */}
+          <div className="flex md:hidden items-center gap-2">
+            <RPCSettings />
+            <WalletButton />
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Only navigation links */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-800 py-4 space-y-3">
             <Link 
@@ -86,15 +90,6 @@ export function Header() {
                 我的铺子
               </Link>
             )}
-            
-            <div className="flex items-center gap-3 px-3 py-2">
-              <span className="text-gray-500 text-sm">RPC:</span>
-              <RPCSettings />
-            </div>
-            
-            <div className="px-3 py-2">
-              <WalletButton className="w-full justify-center" />
-            </div>
           </div>
         )}
       </div>
