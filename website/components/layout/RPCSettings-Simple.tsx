@@ -34,6 +34,12 @@ export function RPCSettings() {
     const handleEndpointChange = (endpoint: string) => {
       setCurrentEndpoint(endpoint);
       checkHealth(endpoint);
+      
+      // Update saved custom RPC state if it was cleared
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('custom_rpc');
+        setSavedCustomRPC(saved);
+      }
     };
     
     rpcProvider.addListener(handleEndpointChange);
@@ -70,6 +76,12 @@ export function RPCSettings() {
   };
 
   const handleNetworkChange = (newNetwork: Network) => {
+    // Clear custom RPC when switching networks
+    if (savedCustomRPC) {
+      rpcProvider.setCustomRPC(null);
+      setSavedCustomRPC(null);
+    }
+    
     rpcProvider.setNetwork(newNetwork);
     setNetwork(newNetwork);
     setDropdownOpen(false);
@@ -243,7 +255,7 @@ export function RPCSettings() {
               </div>
             )}
             
-            {rpcProvider.getCurrentEndpointName() === "Custom RPC" && !showCustomInput && (
+            {savedCustomRPC && !showCustomInput && (
               <>
                 <div className="border-t border-gray-800 mt-2 pt-2">
                   <button

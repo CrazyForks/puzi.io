@@ -12,7 +12,7 @@ import {
 import { Puzi } from "@/anchor-idl/idl";
 import Idl from "@/anchor-idl/idl.json";
 import { useEffect } from "react";
-import { envConfig } from "@/config/env";
+import { rpcProvider } from "@/utils/rpc-provider";
 
 interface UseProgramReturn {
   program: anchor.Program<Puzi>;
@@ -52,7 +52,7 @@ export function useProgram(): UseProgramReturn {
   // Fund connected wallet with devnet SOL (only on devnet)
   useEffect(() => {
     const airdropDevnetSol = async () => {
-      if (!publicKey || envConfig.network !== 'devnet') return;
+      if (!publicKey || rpcProvider.getNetwork() !== 'devnet') return;
 
       try {
         const balance = await connection.getBalance(publicKey);

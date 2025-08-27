@@ -17,8 +17,8 @@ export const DEVNET_ENDPOINTS: RPCEndpoint[] = [
 export type Network = 'mainnet' | 'devnet';
 
 class RPCProvider {
-  private network: Network = 'devnet';
-  private endpoints: RPCEndpoint[] = DEVNET_ENDPOINTS;
+  private network: Network = 'mainnet';
+  private endpoints: RPCEndpoint[] = MAINNET_ENDPOINTS;
   private currentEndpointIndex: number = 0;
   private customRPC: string | null = null;
   private connection: Connection | null = null;
@@ -45,6 +45,14 @@ class RPCProvider {
 
   setNetwork(network: Network) {
     this.network = network;
+    
+    // Clear custom RPC when changing network
+    if (this.customRPC) {
+      this.customRPC = null;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('custom_rpc');
+      }
+    }
     
     switch (network) {
       case 'mainnet':
