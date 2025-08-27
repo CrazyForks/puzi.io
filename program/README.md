@@ -126,7 +126,7 @@ solana program show <BUFFER_ADDRESS>
 - 部署到mainnet 不给小费有点难，还好通过 buffer 上传可以断点重连
   ```
    solana program write-buffer target/deploy/puzi.so \
-    --url https://mainnet.helius-rpc.com/\?api-key\=7b04005d-ff69-4612-98a3-0eba92102d80 \        
+    --url https://mainnet.helius-rpc.com/\?api-key\=**** \        
     --keypair ~/.config/solana/id.json
   Blockhash expired. 4 retries remaining
   Blockhash expired. 3 retries remaining

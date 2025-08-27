@@ -7,7 +7,6 @@ export interface RPCEndpoint {
 
 export const MAINNET_ENDPOINTS: RPCEndpoint[] = [
   { name: 'PublicNode', url: 'https://solana-rpc.publicnode.com' },
-  { name: 'DRPC', url: 'https://solana.drpc.org/' },
   { name: 'Solana Official', url: 'https://api.mainnet-beta.solana.com' },
   { name: 'Helius', url: 'https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY' },
   { name: 'QuickNode', url: 'https://YOUR_QUICKNODE_ENDPOINT.quiknode.pro/' },

@@ -6,7 +6,8 @@ import { getTokenByMint } from "@/config/known-tokens";
 import { useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund } from "@/utils/rent";
-import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper"
+import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 interface ListingCardProps {
   listing: any;
@@ -30,6 +31,7 @@ export function ListingCard({
   cancelLoading = false
 }: ListingCardProps) {
   const { connection } = useConnection();
+  const { setVisible: setWalletModalVisible } = useWalletModal();
   const [baseRentRefund, setBaseRentRefund] = useState<number | null>(null);
   const isWrappedSOL = listing.sellMint === WRAPPED_SOL_MINT.toString() || 
                        listing.sellMint === "So11111111111111111111111111111111111111112";
@@ -222,8 +224,14 @@ export function ListingCard({
             )}
           </>
         ) : (
-          <Button size="sm" disabled variant="outline" className="w-full">
-            请连接钱包
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium border-0"
+            onClick={() => setWalletModalVisible(true)}
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            连接钱包购买
           </Button>
         )}
       </div>

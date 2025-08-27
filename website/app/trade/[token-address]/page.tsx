@@ -213,14 +213,15 @@ export default function TokenTradePage() {
   };
 
   const handleOrderClick = (order: OrderBookEntry, type: 'buy' | 'sell') => {
+    if (!connected) {
+      setVisible(true);
+      return;
+    }
     setSelectedOrder(order);
   };
 
   const handlePurchase = async (purchaseAmount: string) => {
-    if (!selectedOrder || !connected || !publicKey) {
-      if (!connected) {
-        setVisible(true);
-      }
+    if (!selectedOrder || !publicKey) {
       return;
     }
 
@@ -345,7 +346,13 @@ export default function TokenTradePage() {
           </div>
           <div className="flex gap-2">
             <Button 
-              onClick={() => setShowListingModal(true)}
+              onClick={() => {
+                if (!connected) {
+                  setVisible(true);
+                } else {
+                  setShowListingModal(true);
+                }
+              }}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
             >
               <Plus className="w-4 h-4 mr-1" />

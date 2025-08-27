@@ -20,11 +20,11 @@ export default function Home() {
         <p className="text-xl md:text-2xl text-gray-400 mb-12 max-w-3xl mx-auto">
           在 Solana 上出售任何东西
         </p>
-        
+
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           {connected && publicKey ? (
-            <Link 
+            <Link
               href={`/${publicKey.toString()}`}
               className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-full flex items-center gap-2 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/25"
             >
@@ -40,10 +40,10 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </button>
           )}
-          <a 
+          <a
             href="https://github.com/timqian/puzi.io"
             target="_blank"
-            rel="noopener noreferrer" 
+            rel="noopener noreferrer"
             className="px-8 py-4 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white font-medium rounded-full flex items-center gap-2 transition-all"
           >
             <Code className="w-5 h-5" />
@@ -101,7 +101,7 @@ export default function Home() {
                 使用 Phantom 或其他 Solana 钱包连接
               </p>
             </div>
-            
+
             <div className="flex flex-col items-center">
               <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mb-4 border border-purple-600/50">
                 <span className="text-2xl font-bold text-purple-400">2</span>
@@ -111,7 +111,7 @@ export default function Home() {
                 选择要出售的代币，设置价格和数量
               </p>
             </div>
-            
+
             <div className="flex flex-col items-center">
               <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mb-4 border border-purple-600/50">
                 <span className="text-2xl font-bold text-purple-400">3</span>
@@ -131,11 +131,11 @@ export default function Home() {
           <a href="https://github.com/timqian/puzi.io" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400 transition-colors">
             GitHub
           </a>
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400 transition-colors">
-            Twitter
-          </a>
-          <a href="#" className="text-gray-500 hover:text-gray-400 transition-colors">
+          <a href="https://discord.gg/prF8S5qVnh" className="text-gray-500 hover:text-gray-400 transition-colors">
             Discord
+          </a>
+          <a href="https://x.com/tim_qian" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400 transition-colors">
+            X
           </a>
         </div>
         <p className="text-sm text-gray-600">
