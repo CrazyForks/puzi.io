@@ -4,7 +4,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import type { Metadata } from "next";
-import { SolanaProvider } from "@/components/counter/provider/Solana";
+import { SolanaProvider } from "@/providers/SolanaProvider";
 import { Toaster } from "sonner";
 import { Header } from "@/components/layout/Header";
 

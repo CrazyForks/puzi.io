@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { WalletButton } from "@/components/counter/WalletButton";
+import { WalletButton } from "@/components/wallet/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { RPCSettings } from "./RPCSettings-Simple";
 
