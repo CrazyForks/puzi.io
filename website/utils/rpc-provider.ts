@@ -6,6 +6,7 @@ export interface RPCEndpoint {
 }
 
 export const MAINNET_ENDPOINTS: RPCEndpoint[] = [
+  { name: 'PuziRPC', url: 'https://mainnet.helius-rpc.com/?api-key=7b04005d-ff69-4612-98a3-0eba92102d80' },
   { name: 'PublicNode', url: 'https://solana-rpc.publicnode.com' },
   { name: 'Solana Official', url: 'https://api.mainnet-beta.solana.com' },
   { name: 'Helius', url: 'https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY' },
