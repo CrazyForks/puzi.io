@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTradableTokens } from "@/config/tradable-tokens";
 import { useRouter } from "next/navigation";
-import { Coins, ExternalLink, TrendingUp } from "lucide-react";
+import { Coins, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { rpcProvider } from "@/utils/rpc-provider";
 
