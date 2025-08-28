@@ -44,20 +44,12 @@ export function PurchaseModal({
     });
   };
 
-  // Initialize purchase amount when modal opens
+  // Clear purchase amount when modal opens
   useEffect(() => {
-    if (open && listing) {
-      if (isReverseListing) {
-        // For reverse listings, set to total (USDC amount)
-        const total = listing.total || listing.amount / Math.pow(10, listing.sellTokenDecimals ?? 9);
-        setPurchaseAmount(formatAmount(total));
-      } else {
-        // For normal listings
-        const amount = listing.amount / Math.pow(10, listing.sellTokenDecimals ?? 9);
-        setPurchaseAmount(formatAmount(amount));
-      }
+    if (open) {
+      setPurchaseAmount("");
     }
-  }, [open, listing, isReverseListing]);
+  }, [open]);
 
   const formatPrice = (price: number) => {
     if (!price || price === 0) return "0";
@@ -73,21 +65,21 @@ export function PurchaseModal({
     if (isReverseListing) {
       // For reverse listings, total is USDC amount
       const total = listing.total || listing.amount / Math.pow(10, listing.sellTokenDecimals ?? 9);
-      setPurchaseAmount(formatAmount(total));
+      setPurchaseAmount(total.toString());
     } else {
       const maxAmount = listing.amount / Math.pow(10, listing.sellTokenDecimals ?? 9);
-      setPurchaseAmount(formatAmount(maxAmount));
+      setPurchaseAmount(maxAmount.toString());
     }
   };
 
   const handleConfirm = async () => {
     await onConfirm(purchaseAmount);
-    setPurchaseAmount("1");
+    setPurchaseAmount("");
   };
 
   const handleCancel = () => {
     onOpenChange(false);
-    setPurchaseAmount("1");
+    setPurchaseAmount("");
   };
 
   if (!listing) return null;
@@ -137,8 +129,10 @@ export function PurchaseModal({
   if (isValidPrecision && inputValue > 0) {
     if (isReverseListing) {
       // Buying USDC with Token: inputValue is USDC amount
-      const tokenPerUsdc = listing.price > 0 ? 1 / listing.price : 0;
-      totalPayment = inputValue * tokenPerUsdc;
+      // We need to calculate how many tokens are needed to buy this amount of USDC
+      // listing.pricePerToken is the price per USDC in Token's smallest units
+      const pricePerUsdc = listing.pricePerToken / Math.pow(10, listing.buyTokenDecimals ?? 9);
+      totalPayment = inputValue * pricePerUsdc;
     } else {
       // Buying Token with USDC: inputValue is Token amount
       const pricePerToken = listing.pricePerToken / Math.pow(10, listing.buyTokenDecimals ?? 9);
