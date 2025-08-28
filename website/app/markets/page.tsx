@@ -102,17 +102,6 @@ export default function MarketsPage() {
                           </p>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-gray-400 hover:text-white p-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`https://solscan.io/token/${token.address}`, '_blank');
-                        }}
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
                     </div>
                     
                     {token.description && (

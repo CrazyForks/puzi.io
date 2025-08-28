@@ -14,6 +14,14 @@ export interface TradableToken {
 // Mainnet tradable tokens
 const MAINNET_TRADABLE_TOKENS: TradableToken[] = [
   {
+    symbol: 'v2ex',
+    name: 'V2EX',
+    address: '9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump',
+    network: 'mainnet',
+    description: 'way to explore',
+    logoURI: 'https://ipfs.io/ipfs/QmT8rZaCR85GUJB3x7CTf4oQ3BZvK3BUEgRe6jWXwWzXaC',
+  },
+  {
     symbol: 'sol',
     name: 'Solana',
     address: 'So11111111111111111111111111111111111111112', // Wrapped SOL
@@ -22,14 +30,6 @@ const MAINNET_TRADABLE_TOKENS: TradableToken[] = [
     logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
     website: 'https://solana.com',
     twitter: 'https://twitter.com/solana',
-  },
-  {
-    symbol: 'v2ex',
-    name: 'V2EX',
-    address: '9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump',
-    network: 'mainnet',
-    description: 'way to explore',
-    logoURI: 'https://ipfs.io/ipfs/QmT8rZaCR85GUJB3x7CTf4oQ3BZvK3BUEgRe6jWXwWzXaC',
   },
   // Add more mainnet tokens here
 ];
