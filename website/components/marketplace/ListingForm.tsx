@@ -10,6 +10,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund, getTokenAccountRentCost } from "@/utils/rent";
 import { WRAPPED_SOL_MINT } from "@/utils/sol-wrapper";
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface TokenInfo {
   mint: string;
@@ -37,6 +38,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const { createListing, loading } = useCreateListing();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const calculateRentCost = async () => {
@@ -81,13 +83,13 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
     const priceNumber = parseFloat(pricePerToken);
     
     if (sellAmountNumber <= 0 || priceNumber <= 0) {
-      alert("请输入有效的数量和价格");
+      alert(t('trade.invalidAmountOrPrice'));
       return;
     }
 
     const maxAmount = selectedToken.amount / Math.pow(10, selectedToken.decimals);
     if (sellAmountNumber > maxAmount) {
-      alert(`出售数量不能超过余额 ${maxAmount}`);
+      alert(`${t('shop.amountExceedsBalance')} ${maxAmount}`);
       return;
     }
 
@@ -122,13 +124,13 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            上架代币
+            {t('trade.listToken')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">请先选择要出售的代币</p>
+            <p className="text-gray-400">{t('shop.selectTokenFirst')}</p>
           </div>
         </CardContent>
       </Card>
@@ -142,7 +144,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <ShoppingCart className="w-5 h-5" />
-          上架代币
+          {t('trade.listToken')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -164,7 +166,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
                   {selectedToken.symbol || "未知代币"}
                 </p>
                 <p className="text-xs text-gray-400">
-                  余额: {maxAmount.toLocaleString()}
+                  {t('common.balance')}: {maxAmount.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -173,14 +175,14 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
           {/* 出售数量 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              出售数量
+              {t('trade.sellAmount')}
             </label>
             <div className="relative">
               <input
                 type="number"
                 value={sellAmount}
                 onChange={(e) => setSellAmount(e.target.value)}
-                placeholder="输入要出售的数量"
+                placeholder={t('shop.inputSellAmount')}
                 step="any"
                 min="0"
                 max={maxAmount}
@@ -198,14 +200,14 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               </Button>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              最大可出售: {maxAmount.toLocaleString()}
+              {t('shop.maxCanSell')}: {maxAmount.toLocaleString()}
             </p>
           </div>
 
           {/* 支付代币选择 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              支付代币
+              {t('trade.paymentToken')}
             </label>
             <div className="relative">
               <button
@@ -254,20 +256,20 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               )}
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              买家需要使用 {selectedPaymentToken.symbol} 来购买您的代币
+              {t('trade.buyerNeedsToUse').replace('{token}', selectedPaymentToken.symbol)}
             </p>
           </div>
 
           {/* 单价 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              单价 ({selectedPaymentToken.symbol})
+              {t('common.unitPrice')} ({selectedPaymentToken.symbol})
             </label>
             <input
               type="number"
               value={pricePerToken}
               onChange={(e) => setPricePerToken(e.target.value)}
-              placeholder={`每个${selectedToken.symbol || '代币'}的价格 (${selectedPaymentToken.symbol})`}
+              placeholder={t('trade.pricePerToken').replace('{token}', selectedToken.symbol || 'Token').replace('{payment}', selectedPaymentToken.symbol)}
               step="any"
               min="0"
               className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
@@ -291,14 +293,14 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
               <div className="flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm text-gray-300">创建卖单需要租金</p>
+                  <p className="text-sm text-gray-300">{t('shop.rentNotice')}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    需要支付约 {rentCost.toFixed(6)} SOL 的租金
+                    {t('shop.rentAmount').replace('{amount}', rentCost.toFixed(6))}
                     {needsWsolAccount ? 
-                      "（listing账户 + escrow账户 + wSOL账户）" : 
-                      "（listing账户 + escrow账户）"}。
-                    当您取消卖单或售罄后，可以全额回收这笔租金。
-                    {needsWsolAccount && " 其中 wSOL 账户的租金会在取消卖单时自动返还。"}
+                      `（${t('trade.listingAccount')} + ${t('trade.escrowAccount')} + ${t('trade.wsolAccount')}）` : 
+                      `（${t('trade.listingAccount')} + ${t('trade.escrowAccount')}）`}。
+                    {t('shop.rentRefundNotice')}
+                    {needsWsolAccount && ` ${t('shop.wsolAccountNotice')}`}
                   </p>
                 </div>
               </div>
@@ -317,7 +319,7 @@ export function ListingForm({ selectedToken, onListingComplete }: ListingFormPro
                 创建中...
               </>
             ) : (
-              "创建卖单"
+              t('trade.createListing')
             )}
           </Button>
         </form>

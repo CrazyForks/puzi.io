@@ -10,6 +10,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 import { ListingCard } from "./ListingCard";
 import { PurchaseModal } from "./PurchaseModal";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface UserListingsProps {
   userAddress: string;
@@ -27,6 +28,7 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
   const [cancelLoadingStates, setCancelLoadingStates] = useState<Record<string, boolean>>({});
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleRefresh = () => {
     refetch();
@@ -57,7 +59,7 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
     const amount = parseFloat(purchaseAmount);
     
     if (isNaN(amount) || amount <= 0) {
-      alert("请输入有效的购买数量");
+      alert(t('errors.invalidAmount'));
       return;
     }
 
@@ -66,7 +68,7 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
     
     // 验证数量不超过库存
     if (buyAmountInSmallestUnit > selectedListing.amount) {
-      alert(`购买数量不能超过库存 (${formatAmount(selectedListing.amount, decimals)})`);
+      alert(`${t('errors.amountExceedsStock')} (${formatAmount(selectedListing.amount, decimals)})`);
       return;
     }
 
@@ -112,13 +114,13 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            在售商品
+            {t('shop.onSale')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-400">加载卖单中...</span>
+            <span className="ml-2 text-gray-400">{t('common.loading')}...</span>
           </div>
         </CardContent>
       </Card>
@@ -131,14 +133,14 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            在售商品
+            {t('shop.onSale')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <p className="text-red-400 mb-4">{error}</p>
             <Button onClick={handleRefresh} variant="outline" size="sm">
-              重试
+              {t('common.refresh')}
             </Button>
           </div>
         </CardContent>
@@ -153,11 +155,11 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
           <div className="flex justify-between items-center">
             <CardTitle className="text-white flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
-              在售商品 ({userListings.length})
+              {t('shop.onSale')} ({userListings.length})
             </CardTitle>
             <Button onClick={handleRefresh} variant="outline" size="sm" className="hover:bg-white/10">
               <RefreshCw className="w-4 h-4 mr-1" />
-              刷新
+              {t('common.refresh')}
             </Button>
           </div>
         </CardHeader>
@@ -167,10 +169,10 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
             <div className="text-center py-16">
               <ShoppingCart className="w-20 h-20 text-gray-700 mx-auto mb-4 opacity-50" />
               <p className="text-gray-500 text-lg font-medium">
-                暂无在售商品
+                {t('shop.noListings')}
               </p>
               <p className="text-gray-600 text-sm mt-2">
-                {showAddButton ? "点击上架按钮开始销售" : "店主还没有上架任何商品"}
+                {showAddButton ? t('shop.clickToList') : t('shop.ownerNoListings')}
               </p>
             </div>
           ) : (
@@ -185,7 +187,7 @@ export function UserListings({ userAddress, onRefresh, onAddListing, showAddButt
                     <Store className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                   </div>
                   <span className="text-gray-400 group-hover:text-white transition-colors font-medium text-sm sm:text-base">
-                    上架商品
+                    {t('shop.listItem')}
                   </span>
                 </button>
               )}

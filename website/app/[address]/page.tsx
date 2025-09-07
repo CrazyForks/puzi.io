@@ -15,6 +15,7 @@ import { Store, Copy, Check, Coins } from "lucide-react";
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface TokenInfo {
   mint: string;
@@ -33,6 +34,7 @@ export default function UserShop() {
   const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
   const [copied, setCopied] = useState(false);
   const tokenListRef = useRef<TokenListRef>(null);
+  const { t } = useTranslation();
   
   const isOwner = publicKey?.toBase58() === address;
   
@@ -44,7 +46,7 @@ export default function UserShop() {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
     setCopied(true);
-    toast.success("链接已复制");
+    toast.success(t('shop.linkCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
   
@@ -63,11 +65,11 @@ export default function UserShop() {
               <div className="flex items-center gap-3">
                 <Store className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 flex-shrink-0" />
                 <CardTitle className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
-                  {shortenAddress(address)} 的铺子
+                  {shortenAddress(address)} {t('shop.shopSuffix')}
                   <button
                     onClick={copyUrl}
                     className="text-gray-400 hover:text-white transition-colors p-1 cursor-pointer"
-                    title="复制链接"
+                    title={t('shop.copyLink')}
                   >
                     {copied ? (
                       <Check className="w-4 h-4 text-green-400" />
@@ -113,7 +115,7 @@ export default function UserShop() {
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-800">
               <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <Coins className="w-5 h-5 text-purple-400" />
-                创建卖单
+                {t('trade.createListing')}
               </DialogTitle>
             </DialogHeader>
             
@@ -125,7 +127,7 @@ export default function UserShop() {
                     <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                       <span className="text-purple-400 font-bold">1</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-white">选择代币</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('shop.selectToken')}</h3>
                   </div>
                   <TokenList 
                     ref={tokenListRef}
@@ -140,7 +142,7 @@ export default function UserShop() {
                     <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                       <span className="text-purple-400 font-bold">2</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-white">设置价格</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('shop.setPrice')}</h3>
                   </div>
                   <ListingForm 
                     selectedToken={selectedToken}

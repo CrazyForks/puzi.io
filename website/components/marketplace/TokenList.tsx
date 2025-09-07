@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTokenAccounts } from "./hooks/useTokenAccounts";
 import { Loader2, Coins } from "lucide-react";
 import { forwardRef, useImperativeHandle } from "react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface TokenInfo {
   mint: string;
@@ -26,6 +27,7 @@ export interface TokenListRef {
 
 export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedToken, onTokenSelect }, ref) => {
   const { tokens, loading, error, refetch } = useTokenAccounts();
+  const { t } = useTranslation();
 
   // 暴露refetch方法给父组件
   useImperativeHandle(ref, () => ({
@@ -38,13 +40,13 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Coins className="w-5 h-5" />
-            我的代币
+            {t('shop.myTokens')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-400">加载中...</span>
+            <span className="ml-2 text-gray-400">{t('common.loading')}...</span>
           </div>
         </CardContent>
       </Card>
@@ -57,7 +59,7 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Coins className="w-5 h-5" />
-            我的代币
+            {t('shop.myTokens')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -66,10 +68,10 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
             {error.includes("频繁") || error.includes("429") ? (
               <div className="space-y-3">
                 <p className="text-sm text-gray-400">
-                  网络请求受限，请等待30秒后重试
+                  {t('shop.networkLimited')}
                 </p>
                 <Button onClick={refetch} variant="outline" size="sm">
-                  重试
+                  {t('common.refresh')}
                 </Button>
               </div>
             ) : (
@@ -89,7 +91,7 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Coins className="w-5 h-5" />
-            我的代币
+            {t('shop.myTokens')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -97,7 +99,7 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
             <Coins className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 mb-4">钱包中没有找到代币</p>
             <Button onClick={refetch} variant="outline" size="sm">
-              刷新
+              {t('common.refresh')}
             </Button>
           </div>
         </CardContent>
@@ -111,7 +113,7 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
         <div className="flex justify-between items-center">
           <CardTitle className="text-white flex items-center gap-2">
             <Coins className="w-5 h-5" />
-            我的代币 ({tokens.length})
+            {t('shop.myTokens')} ({tokens.length})
           </CardTitle>
           <Button onClick={refetch} variant="outline" size="sm">
             刷新
@@ -166,7 +168,7 @@ export const TokenList = forwardRef<TokenListRef, TokenListProps>(({ selectedTok
                   <p className="text-white font-medium">
                     {(token.amount / Math.pow(10, token.decimals)).toLocaleString()}
                   </p>
-                  <p className="text-xs text-gray-400">余额</p>
+                  <p className="text-xs text-gray-400">{t('common.balance')}</p>
                 </div>
               </div>
             </div>

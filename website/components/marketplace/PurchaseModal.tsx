@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function PurchaseModal({
   isReverseListing = false,
 }: PurchaseModalProps) {
   const [purchaseAmount, setPurchaseAmount] = useState<string>("");
+  const { t } = useTranslation();
 
   const formatAmount = (amount: number) => {
     if (!amount || amount === 0) return "0";
@@ -144,14 +146,14 @@ export function PurchaseModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-900 border-gray-800 max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl font-bold">购买确认</DialogTitle>
+          <DialogTitle className="text-white text-xl font-bold">{t('trade.purchaseConfirm')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
           {/* 代币信息卡片 */}
           <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">购买代币</span>
+              <span className="text-gray-400 text-sm">{t('trade.purchaseToken')}</span>
               <a 
                 href={`https://solscan.io/token/${purchaseTokenMint}`}
                 target="_blank"
@@ -163,13 +165,13 @@ export function PurchaseModal({
               </a>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">可购买量</span>
+              <span className="text-gray-400 text-sm">{t('trade.availableAmount')}</span>
               <span className="text-white font-medium">
                 {formatAmount(availableAmount)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">单价</span>
+              <span className="text-gray-400 text-sm">{t('common.unitPrice')}</span>
               <span className="text-white font-medium">
                 {priceDisplay}
               </span>
@@ -179,7 +181,7 @@ export function PurchaseModal({
           {/* 购买数量输入 */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">
-              购买数量 ({purchaseTokenSymbol})
+              {t('trade.purchaseAmount')} ({purchaseTokenSymbol})
             </label>
             <div className="flex gap-2">
               <Input
@@ -192,14 +194,14 @@ export function PurchaseModal({
                   }
                 }}
                 className="flex-1 bg-gray-800 border-gray-700 text-white transition-colors"
-                placeholder="输入购买数量"
+                placeholder={t('trade.purchaseAmount')}
               />
               <Button
                 variant="outline"
                 onClick={handleSelectAll}
                 className="border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-colors"
               >
-                全部
+                {t('common.all')}
               </Button>
             </div>
             
@@ -207,14 +209,12 @@ export function PurchaseModal({
             <div className="space-y-1">
               {!isValidPrecision && purchaseAmount !== "" && (
                 <p className="text-xs text-red-400">
-                  ⚠️ 输入的数量精度超过代币支持的小数位数
+                  ⚠️ {t('errors.invalidAmount')}
                 </p>
               )}
               <p className="text-xs text-gray-500">
-                最小购买单位: {minAmount.toFixed(decimals)}
-                {decimals === 0 && " (必须购买整数个)"}
-                {decimals === 1 && " (精确到小数点后1位)"}
-                {decimals > 1 && ` (精确到小数点后${decimals}位)`}
+                {t('trade.minPurchaseUnit')}: {minAmount.toFixed(decimals)}
+                {decimals > 0 && ` (${decimals === 1 ? t('trade.precision').replace('{digits}', '1') : t('trade.precision').replace('{digits}', decimals.toString())})`}
               </p>
             </div>
           </div>
@@ -223,7 +223,7 @@ export function PurchaseModal({
           {purchaseAmount && inputValue > 0 && isValidPrecision && (
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">总计支付</span>
+                <span className="text-gray-300 text-sm">{t('common.totalPayment')}</span>
                 <span className="text-white text-lg font-bold">
                   {totalPayment.toFixed(6)} {paymentTokenSymbol}
                 </span>
@@ -238,7 +238,7 @@ export function PurchaseModal({
             onClick={handleCancel}
             className="border-gray-700 hover:bg-gray-800"
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
@@ -248,10 +248,10 @@ export function PurchaseModal({
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                购买中...
+                {t('common.loading')}...
               </>
             ) : (
-              '确认购买'
+              t('common.confirm')
             )}
           </Button>
         </DialogFooter>

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useConnection } from "@solana/wallet-adapter-react";
+import { useTranslation } from "@/lib/i18n/context";
 import { useTokenListings } from "@/components/marketplace/hooks/useTokenListings";
 import { useOnChainTokenMetadata } from "@/components/marketplace/hooks/useOnChainTokenMetadata";
 import { usePurchase } from "@/components/marketplace/hooks/usePurchase";
@@ -63,6 +64,7 @@ export default function TokenTradePage() {
   const { publicKey, connected } = useWallet();
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
+  const { t } = useTranslation();
   const { sellListings, buyListings, loading, refetch } = useTokenListings(tokenAddress);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
   const { purchaseToken } = usePurchase();
@@ -229,7 +231,7 @@ export default function TokenTradePage() {
 
     const amount = parseFloat(purchaseAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("请输入有效的数量");
+      alert(t('trade.invalidAmount'));
       return;
     }
 
@@ -294,7 +296,7 @@ export default function TokenTradePage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-400">加载交易数据...</span>
+            <span className="ml-2 text-gray-400">{t('trade.loadingTradeData')}...</span>
           </div>
         </div>
       </div>
@@ -342,7 +344,7 @@ export default function TokenTradePage() {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Coins className="w-6 h-6 text-purple-400" />
-              {tokenInfo?.symbol || 'Token'} / USDC 交易对
+              {tokenInfo?.symbol || 'Token'} / USDC {t('trade.tradingPair')}
             </h2>
           </div>
           <div className="flex gap-2">
@@ -357,7 +359,7 @@ export default function TokenTradePage() {
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
             >
               <Plus className="w-4 h-4 mr-1" />
-              上架代币
+              {t('trade.listToken')}
             </Button>
             <Button 
               onClick={refetch} 
@@ -365,7 +367,7 @@ export default function TokenTradePage() {
               className="hover:bg-white/10"
             >
               <RefreshCw className="w-4 h-4 mr-1" />
-              刷新
+              {t('common.refresh')}
             </Button>
           </div>
         </div>
@@ -377,15 +379,15 @@ export default function TokenTradePage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-white">
-                  使用 USDC 购买 {tokenInfo?.symbol || 'Token'}
+                  {t('trade.buyWithUsdc').replace('{token}', tokenInfo?.symbol || 'Token')}
                 </h2>
               </div>
 
               {sellOrders.filter(o => o.buyTokenSymbol === "USDC" || o.buyTokenSymbol === "USDC-Dev" || o.buyTokenSymbol === getUSDCSymbol()).length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-400">暂无订单</p>
+                  <p className="text-gray-400">{t('trade.noOrders')}</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    等待用户挂单
+                    {t('trade.waitingForListings')}
                   </p>
                 </div>
               ) : (
@@ -396,24 +398,24 @@ export default function TokenTradePage() {
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
                           <div className="flex items-center gap-1">
                             <span>
-                              价格 ({leftPriceMode === 'usdc-per-token' 
+                              {t('common.price')} ({leftPriceMode === 'usdc-per-token' 
                                 ? `USDC/${tokenInfo?.symbol || 'Token'}`
                                 : `${tokenInfo?.symbol || 'Token'}/USDC`})
                             </span>
                             <button
                               onClick={() => setLeftPriceMode(leftPriceMode === 'usdc-per-token' ? 'token-per-usdc' : 'usdc-per-token')}
                               className="p-0.5 hover:bg-gray-700 rounded transition-colors"
-                              title="切换价格显示方式"
+                              title={t('trade.switchPriceDisplay')}
                             >
                               <ArrowLeftRight className="w-3 h-3 text-gray-500 hover:text-white" />
                             </button>
                           </div>
                         </th>
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
-                          数量 ({tokenInfo?.symbol || 'Token'})
+                          {t('common.quantity')} ({tokenInfo?.symbol || 'Token'})
                         </th>
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
-                          操作
+                          {t('common.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -444,7 +446,7 @@ export default function TokenTradePage() {
                                   size="sm"
                                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium h-7 px-3 text-xs"
                                 >
-                                  购买
+                                  {t('common.buy')}
                                 </Button>
                               </td>
                             </tr>
@@ -462,15 +464,15 @@ export default function TokenTradePage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-white">
-                  使用 {tokenInfo?.symbol || 'Token'} 购买 USDC
+                  {t('trade.buyUsdcWith').replace('{token}', tokenInfo?.symbol || 'Token')}
                 </h2>
               </div>
 
               {buyOrders.filter(o => o.buyTokenSymbol === "USDC" || o.buyTokenSymbol === "USDC-Dev").length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-400">暂无订单</p>
+                  <p className="text-gray-400">{t('trade.noOrders')}</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    等待用户挂单
+                    {t('trade.waitingForListings')}
                   </p>
                 </div>
               ) : (
@@ -481,24 +483,24 @@ export default function TokenTradePage() {
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
                           <div className="flex items-center gap-1">
                             <span>
-                              价格 ({rightPriceMode === 'token-per-usdc' 
+                              {t('common.price')} ({rightPriceMode === 'token-per-usdc' 
                                 ? `${tokenInfo?.symbol || 'Token'}/USDC`
                                 : `USDC/${tokenInfo?.symbol || 'Token'}`})
                             </span>
                             <button
                               onClick={() => setRightPriceMode(rightPriceMode === 'token-per-usdc' ? 'usdc-per-token' : 'token-per-usdc')}
                               className="p-0.5 hover:bg-gray-700 rounded transition-colors"
-                              title="切换价格显示方式"
+                              title={t('trade.switchPriceDisplay')}
                             >
                               <ArrowLeftRight className="w-3 h-3 text-gray-500 hover:text-white" />
                             </button>
                           </div>
                         </th>
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
-                          数量 (USDC)
+                          {t('common.quantity')} (USDC)
                         </th>
                         <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider pb-3">
-                          操作
+                          {t('common.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -529,7 +531,7 @@ export default function TokenTradePage() {
                                   size="sm"
                                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium h-7 px-3 text-xs"
                                 >
-                                  购买
+                                  {t('common.buy')}
                                 </Button>
                               </td>
                             </tr>
@@ -575,10 +577,10 @@ export default function TokenTradePage() {
               </DialogTitle>
               <DialogDescription className="text-gray-400 mt-2">
                 {!listingType 
-                  ? '请选择您想要出售的代币类型'
+                  ? t('trade.selectTokenType')
                   : listingType === 'sell-token'
-                    ? `出售 ${tokenInfo?.symbol || 'Token'} 收取 USDC`
-                    : `出售 USDC 收取 ${tokenInfo?.symbol || 'Token'}`
+                    ? t('trade.sellTokenForUsdc').replace('{token}', tokenInfo?.symbol || 'Token')
+                    : t('trade.sellUsdcForToken').replace('{token}', tokenInfo?.symbol || 'Token')
                 }
               </DialogDescription>
             </DialogHeader>
@@ -594,7 +596,7 @@ export default function TokenTradePage() {
                       <Coins className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-white font-semibold">
-                      出售 {tokenInfo?.symbol || 'Token'}
+                      {t('trade.sellToken')} {tokenInfo?.symbol || 'Token'}
                     </h3>
                     <p className="text-gray-400 text-sm">
                       收取 USDC
@@ -611,7 +613,7 @@ export default function TokenTradePage() {
                       <Coins className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-white font-semibold">
-                      出售 USDC
+                      {t('trade.sellToken')} USDC
                     </h3>
                     <p className="text-gray-400 text-sm">
                       收取 {tokenInfo?.symbol || 'Token'}
@@ -624,7 +626,7 @@ export default function TokenTradePage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="amount" className="text-sm font-medium text-gray-300">
-                      出售数量 ({listingType === 'sell-token' ? tokenInfo?.symbol || 'Token' : 'USDC'})
+                      {t('trade.sellAmount')} ({listingType === 'sell-token' ? tokenInfo?.symbol || 'Token' : 'USDC'})
                     </Label>
                     <span className="text-xs text-gray-400">
                       可用: {listingType === 'sell-token' 
@@ -645,7 +647,7 @@ export default function TokenTradePage() {
                         }
                       }}
                       className="flex-1 bg-gray-800 border-gray-700 text-white"
-                      placeholder="输入出售数量"
+                      placeholder={t('trade.inputSellAmount')}
                     />
                     <Button
                       variant="outline"
@@ -655,7 +657,7 @@ export default function TokenTradePage() {
                       }}
                       className="border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-colors px-4 h-10"
                     >
-                      全部
+                      {t('common.all')}
                     </Button>
                   </div>
                 </div>
@@ -697,13 +699,13 @@ export default function TokenTradePage() {
                     <Info className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 space-y-1">
                       <p className="text-yellow-500 text-sm font-medium">
-                        创建卖单需要租金
+                        {t('trade.rentRequired')}
                       </p>
                       <p className="text-yellow-600 text-xs">
-                        需要支付约 {rentCost.toFixed(6)} SOL 的租金（listing账户 + escrow账户）。
+                        {t('trade.rentInfo').replace('{amount}', rentCost.toFixed(6))}
                       </p>
                       <p className="text-yellow-600 text-xs">
-                        当您取消卖单或售罄后，可以全额回收这笔租金。
+                        {t('trade.rentRefund')}
                       </p>
                     </div>
                   </div>

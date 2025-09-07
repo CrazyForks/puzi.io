@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { Coins, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { rpcProvider } from "@/utils/rpc-provider";
+import { useTranslation } from "@/lib/i18n/context";
 
 export default function MarketsPage() {
   const router = useRouter();
   const [tokens, setTokens] = useState(getTradableTokens());
+  const { t } = useTranslation();
   
   // Update tokens when network changes
   useEffect(() => {
@@ -36,14 +38,14 @@ export default function MarketsPage() {
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-purple-400" />
-                热门交易代币
+                {t('markets.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <Coins className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400">
-                  当前网络暂无配置的交易代币
+                  {t('markets.noTokensFound')}
                 </p>
               </div>
             </CardContent>
@@ -61,10 +63,10 @@ export default function MarketsPage() {
             <div className="flex justify-between items-center">
               <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-purple-400" />
-                热门交易代币
+                {t('markets.title')}
               </CardTitle>
               <span className="text-sm text-gray-400">
-                网络: {rpcProvider.getNetwork() === 'mainnet' ? '主网' : '开发网'}
+                {t('common.network')}: {rpcProvider.getNetwork() === 'mainnet' ? t('common.mainnet') : t('common.devnet')}
               </span>
             </div>
           </CardHeader>

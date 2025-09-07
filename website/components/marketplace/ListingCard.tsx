@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getTotalRentRefund } from "@/utils/rent";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface ListingCardProps {
   listing: any;
@@ -32,6 +33,7 @@ export function ListingCard({
   const { connection } = useConnection();
   const { setVisible: setWalletModalVisible } = useWalletModal();
   const [baseRentRefund, setBaseRentRefund] = useState<number | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOwner) {
@@ -75,7 +77,7 @@ export function ListingCard({
       {/* Sold Out Badge */}
       {isSoldOut && (
         <div className="absolute top-2 right-2 bg-red-500/20 text-red-400 px-2 py-1 rounded-md text-xs font-semibold border border-red-500/30">
-          已售罄
+          {t('common.soldOut')}
         </div>
       )}
       
@@ -129,13 +131,13 @@ export function ListingCard({
         {/* Price Info */}
         <div className="bg-gray-900/50 rounded-lg p-3 mb-4 space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-400">数量:</span>
+          <span className="text-gray-400">{t('common.quantity')}:</span>
           <span className={listing.amount === 0 ? "text-gray-500 line-through" : "text-white"}>
-            {listing.amount === 0 ? "已售罄" : formatAmount(listing.amount, listing.sellTokenDecimals ?? 9)}
+            {listing.amount === 0 ? t('common.soldOut') : formatAmount(listing.amount, listing.sellTokenDecimals ?? 9)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">单价:</span>
+          <span className="text-gray-400">{t('common.unitPrice')}:</span>
           <div className="flex items-center gap-1">
             <span className="text-white font-bold">
               {formatPrice(listing.pricePerToken, listing.buyTokenDecimals ?? 9)}
@@ -175,17 +177,17 @@ export function ListingCard({
                 {purchaseLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    购买中
+                    {t('common.loading')}
                   </>
                 ) : isSoldOut ? (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    已售罄
+                    {t('common.soldOut')}
                   </>
                 ) : (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    购买
+                    {t('common.buy')}
                   </>
                 )}
               </Button>
@@ -206,14 +208,14 @@ export function ListingCard({
                   ) : (
                     <Trash2 className="w-4 h-4 mr-2" />
                   )}
-                  {isSoldOut ? "回收租金" : "取消卖单"}
+                  {isSoldOut ? t('shop.recoverRent') : t('shop.cancelListing')}
                 </Button>
                 {baseRentRefund && (
                   <div className="flex items-center gap-1 text-xs text-gray-400 justify-center">
                     <Info className="w-3 h-3" />
                     <span>
-                      {listing.amount === 0 ? "售罄后" : "取消后"}
-                      返还租金: ~{baseRentRefund.toFixed(4)} SOL
+                      {listing.amount === 0 ? t('shop.sellOutAfter') : t('shop.cancelAfter')}
+                      {t('shop.rentRefund')}: ~{baseRentRefund.toFixed(4)} SOL
                     </span>
                   </div>
                 )}
@@ -228,7 +230,7 @@ export function ListingCard({
             onClick={() => setWalletModalVisible(true)}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
-            连接钱包购买
+            {t('common.connectWalletToBuy')}
           </Button>
         )}
       </div>

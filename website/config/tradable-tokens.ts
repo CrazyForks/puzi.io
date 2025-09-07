@@ -26,7 +26,7 @@ const MAINNET_TRADABLE_TOKENS: TradableToken[] = [
     name: 'Solana',
     address: 'So11111111111111111111111111111111111111112', // Wrapped SOL
     network: 'mainnet',
-    description: 'Solana 原生代币',
+    description: 'Solana',
     logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
     website: 'https://solana.com',
     twitter: 'https://twitter.com/solana',

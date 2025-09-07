@@ -7,6 +7,7 @@ import { PublicKey } from "@solana/web3.js";
 import { Puzi, IDL } from "@/anchor-idl/idl";
 import { useOnChainTokenMetadata } from "./useOnChainTokenMetadata";
 import { getTokenByMint } from "@/config/known-tokens";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface ListingInfo {
   address: string;
@@ -33,6 +34,7 @@ export function useUserListings(userAddress: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { fetchTokenMetadata } = useOnChainTokenMetadata();
+  const { t } = useTranslation();
 
   const fetchUserListings = useCallback(async () => {
     if (!connection || !userAddress) {
@@ -196,7 +198,7 @@ export function useUserListings(userAddress: string) {
       let errorMessage = "获取卖单失败";
       const error = err as Error;
       if (error.message?.includes("429")) {
-        errorMessage = "网络繁忙，请稍后刷新";
+        errorMessage = t('errors.networkBusy');
       } else if (error.message) {
         errorMessage = error.message;
       }

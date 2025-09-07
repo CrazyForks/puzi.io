@@ -6,10 +6,13 @@ import { WalletButton } from "@/components/wallet/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { RPCSettings } from "./RPCSettings-Simple";
 import { Menu, X, TrendingUp, Store } from "lucide-react";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useTranslation } from "@/lib/i18n/context";
 
 export function Header() {
   const { publicKey, connected } = useWallet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useTranslation();
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -36,22 +39,24 @@ export function Header() {
               href="/markets"
               className="text-gray-300 font-extrabold hover:text-white transition-colors px-3 py-2"
             >
-              热门代币
+              {t('header.popularTokens')}
             </Link>
             {connected && publicKey && (
               <Link 
                 href={`/${publicKey.toBase58()}`}
                 className="text-gray-300 font-extrabold hover:text-white transition-colors px-3 py-2"
               >
-                我的铺子
+                {t('header.myShop')}
               </Link>
             )}
+            <LanguageSwitcher />
             <RPCSettings />
             <WalletButton />
           </div>
 
           {/* Mobile Menu with RPC and Wallet always visible */}
           <div className="flex md:hidden items-center gap-2">
+            <LanguageSwitcher />
             <RPCSettings />
             <WalletButton />
             <button
@@ -77,7 +82,7 @@ export function Header() {
               onClick={closeMobileMenu}
             >
               <TrendingUp className="w-5 h-5 text-purple-400" />
-              热门代币
+              {t('header.popularTokens')}
             </Link>
             
             {connected && publicKey && (
@@ -87,7 +92,7 @@ export function Header() {
                 onClick={closeMobileMenu}
               >
                 <Store className="w-5 h-5 text-purple-400" />
-                我的铺子
+                {t('header.myShop')}
               </Link>
             )}
           </div>
