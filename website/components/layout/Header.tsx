@@ -35,14 +35,14 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
-            <Link 
+            <Link
               href="/markets"
               className="text-gray-300 font-extrabold hover:text-white transition-colors px-3 py-2"
             >
               {t('header.popularTokens')}
             </Link>
             {connected && publicKey && (
-              <Link 
+              <Link
                 href={`/${publicKey.toBase58()}`}
                 className="text-gray-300 font-extrabold hover:text-white transition-colors px-3 py-2"
               >
@@ -56,7 +56,6 @@ export function Header() {
 
           {/* Mobile Menu with RPC and Wallet always visible */}
           <div className="flex md:hidden items-center gap-2">
-            <LanguageSwitcher />
             <RPCSettings />
             <WalletButton />
             <button
@@ -73,10 +72,10 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu - Only navigation links */}
+        {/* Mobile Menu - Navigation links and Language Switcher */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-800 py-4 space-y-3">
-            <Link 
+            <Link
               href="/markets"
               className="flex items-center gap-3 text-gray-300 font-semibold hover:text-white transition-colors px-3 py-2"
               onClick={closeMobileMenu}
@@ -84,9 +83,9 @@ export function Header() {
               <TrendingUp className="w-5 h-5 text-purple-400" />
               {t('header.popularTokens')}
             </Link>
-            
+
             {connected && publicKey && (
-              <Link 
+              <Link
                 href={`/${publicKey.toBase58()}`}
                 className="flex items-center gap-3 text-gray-300 font-semibold hover:text-white transition-colors px-3 py-2"
                 onClick={closeMobileMenu}
@@ -95,6 +94,11 @@ export function Header() {
                 {t('header.myShop')}
               </Link>
             )}
+
+            {/* Language Switcher in mobile dropdown */}
+            <div className="px-3 py-2">
+              <LanguageSwitcher />
+            </div>
           </div>
         )}
       </div>
