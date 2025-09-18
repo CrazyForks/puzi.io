@@ -39,7 +39,7 @@ export function Footer() {
             </a>
             
             <a
-              href="https://discord.gg/your-discord"
+              href="https://discord.gg/prF8S5qVnh"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition-colors"
@@ -49,7 +49,7 @@ export function Footer() {
             </a>
             
             <a
-              href="https://x.com/your-x-handle"
+              href="https://x.com/tim_qian"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition-colors"
